@@ -1,28 +1,19 @@
-# \# Forma AI
+# Forma AI
 
-# 
+AI-Augmented Dynamic Form Engine.
 
-# AI-Augmented Dynamic Form Engine.
+## Frontend
 
-# 
+The frontend is built with React and Vite.
 
-# \## Frontend
+### Run frontend
 
-# 
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-# The frontend is built with React and Vite.
+## Setup
 
-# 
-
-# \### Run frontend
-
-# 
-
-# ```bash
-
-# cd frontend
-
-# npm install
-
-# npm run dev
-
+See [SETUP_GUIDE.md](./SETUP_GUIDE.md) for the full project setup guide.
