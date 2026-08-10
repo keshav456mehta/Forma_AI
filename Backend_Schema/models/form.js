@@ -1,8 +1,6 @@
 const mongoose = require("mongoose");
 
-
 // FIELD SCHEMA
-
 
 const fieldSchema = new mongoose.Schema(
   {
@@ -30,15 +28,29 @@ const fieldSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+
+    // CONDITIONAL LOGIC
+    showIf: {
+      fieldId: {
+        type: String,
+      },
+
+      equals: {
+        type: String,
+      },
+    },
+
+    // VALIDATION
+    validationRegex: {
+      type: String,
+    },
   },
   {
     _id: false,
   }
 );
 
-
 // FORM SCHEMA
-
 
 const formSchema = new mongoose.Schema(
   {
@@ -63,7 +75,6 @@ const formSchema = new mongoose.Schema(
 );
 
 // FORM MODEL
-
 
 const Form = mongoose.model("Form", formSchema);
 
