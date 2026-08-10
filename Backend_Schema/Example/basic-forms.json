@@ -1,0 +1,32 @@
+{
+  "title": "Insurance Claim Form",
+  "description": "Please provide your vehicle and insurance information.",
+  "fields": [
+    {
+      "name": "hasInsurance",
+      "label": "Do you have insurance?",
+      "type": "select",
+      "required": true,
+      "order": 1
+    },
+    {
+      "name": "insuranceCompany",
+      "label": "Insurance Company",
+      "type": "text",
+      "required": true,
+      "order": 2,
+      "showIf": {
+        "fieldId": "hasInsurance",
+        "equals": "Yes"
+      }
+    },
+    {
+      "name": "vehicleNumber",
+      "label": "Vehicle Number",
+      "type": "text",
+      "required": true,
+      "order": 3,
+      "validationRegex": "^[A-Z]{2}[0-9]{4}$"
+    }
+  ]
+}
