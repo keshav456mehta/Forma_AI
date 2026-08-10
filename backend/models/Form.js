@@ -22,6 +22,17 @@ const fieldSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    showIf: {
+      fieldId: {
+        type: String,
+      },
+      equals: {
+        type: String,
+      },
+    },
+    validationRegex: {
+      type: String,
+    },
   },
   {
     _id: false,
