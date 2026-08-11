@@ -1,16 +1,10 @@
 const path = require("path");
-const mongoose = require(path.join(
-  __dirname,
-  "backend",
-  "node_modules",
-  "mongoose"
-));
-const dotenv = require(path.join(
-  __dirname,
-  "backend",
-  "node_modules",
-  "dotenv"
-));
+const { createRequire } = require("module");
+
+// Resolve backend dependencies using Node's module resolution rules.
+const backendRequire = createRequire(path.join(__dirname, "backend", "package.json"));
+const mongoose = backendRequire("mongoose");
+const dotenv = backendRequire("dotenv");
 
 dotenv.config({ path: path.join(__dirname, "backend", ".env") });
 
@@ -54,11 +48,18 @@ async function seed() {
   await mongoose.connect(MONGODB_URI);
   console.log("MongoDB connected for seeding");
 
-  const createdForm = await Form.create(sampleForm);
-  console.log("Seeded form id:", createdForm._id.toString());
-  console.log("Seeded form title:", createdForm.title);
+  const savedForm = await Form.findOneAndUpdate(
+    { title: sampleForm.title },
+    sampleForm,
+    {
+      new: true,
+      upsert: true,
+      setDefaultsOnInsert: true,
+    }
+  ).lean();
 
-  const savedForm = await Form.findById(createdForm._id).lean();
+  console.log("Seeded form id:", savedForm._id.toString());
+  console.log("Seeded form title:", savedForm.title);
   console.log("Verified saved form:", JSON.stringify(savedForm, null, 2));
 }
 

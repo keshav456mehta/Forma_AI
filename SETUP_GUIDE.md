@@ -65,7 +65,7 @@ npm start
 
 Expected basic result:
 - the server starts on port `5000` by default
-- visiting `/` returns `server is running`
+- visiting `/` returns JSON like `{ "message": "server is running" }`
 
 ## 6. Frontend setup
 
@@ -88,7 +88,13 @@ PORT=5000
 MONGODB_URI=your_mongodb_connection_string
 ```
 
-If `MONGODB_URI` is empty, the backend still runs, but MongoDB will not connect.
+You can also use `MONGO_URI` if your team already has that variable name in notes or screenshots.
+
+Important:
+- keep `backend/.env` private and never commit it
+- use `backend/.env.example` as the tracked template
+
+If the MongoDB variable is empty, the backend still runs, but MongoDB will not connect.
 
 ## 8. Useful Git commands
 
