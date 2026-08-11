@@ -47,7 +47,24 @@ const fieldSchema = new mongoose.Schema(
   },
   {
     _id: false,
+  
+  
+  showIf: {
+  fieldId: {
+    type: String
+  },
+  equals: {
+    type: String
   }
+},
+
+validationRegex: {
+  type: String
+}}
+
+
+
+
 );
 
 // FORM SCHEMA
@@ -72,7 +89,13 @@ const formSchema = new mongoose.Schema(
   {
     timestamps: true,
   }
+
+  
+
+
+
 );
+
 
 // FORM MODEL
 
