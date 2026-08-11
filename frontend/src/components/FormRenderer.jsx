@@ -4,7 +4,9 @@ import axios from "axios";
 
 function shouldShowField(field, watchedValues) {
   if (!field.showIf) return true;
+
   const { fieldId, equals } = field.showIf;
+
   return watchedValues[fieldId] === equals;
 }
 
@@ -14,6 +16,7 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
   const [error, setError] = useState(null);
 
   const { register, handleSubmit, watch } = useForm();
+
   // eslint-disable-next-line
   const watchedValues = watch();
 
@@ -36,7 +39,10 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
   };
 
   if (loading) return <p>Loading form...</p>;
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
+
+  if (error) {
+    return <p style={{ color: "red" }}>{error}</p>;
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -49,10 +55,14 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
           <div key={field.name} style={{ marginBottom: "12px" }}>
             <label>{field.label}</label>
             <br />
+
             <input
               {...register(field.name)}
               type="text"
-              style={{ border: "1px solid black", padding: "4px" }}
+              style={{
+                border: "1px solid black",
+                padding: "4px",
+              }}
             />
           </div>
         );
@@ -63,4 +73,5 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
   );
 }
 
+export { shouldShowField };
 export default FormRenderer;
