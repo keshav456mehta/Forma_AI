@@ -30,8 +30,20 @@ const fieldSchema = new mongoose.Schema(
         type: String,
       },
     },
+    // validationRegex: {
+    //   type: String,
+    // },
     validationRegex: {
       type: String,
+    },
+    options: {
+      type: [
+        {
+          label: { type: String },
+          value: { type: String },
+        },
+      ],
+      default: undefined,
     },
   },
   {
