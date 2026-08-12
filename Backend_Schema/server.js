@@ -1,8 +1,8 @@
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 
+const { connectMongo } = require("./db");
 const formRoutes = require("./routes/formRoutes");
 
 // Load environment variables
@@ -48,17 +48,24 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-mongoose
-  .connect(process.env.MONGO_URI, {
-    dbName: "formai",
-  })
-  .then(() => {
+const startServer = async () => {
+  try {
+    await connectMongo();
     console.log("MongoDB connected successfully");
 
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
-  })
-  .catch((error) => {
+  } catch (error) {
     console.error("MongoDB connection failed:", error.message);
-  });
+    if (error.atlasError) {
+      console.error("Atlas connection error:", error.atlasError.message);
+    }
+    console.error(
+      "If using Atlas, add your current IP to Atlas Network Access or disable fallback with MONGO_FALLBACK=false."
+    );
+    process.exit(1);
+  }
+};
+
+startServer();
