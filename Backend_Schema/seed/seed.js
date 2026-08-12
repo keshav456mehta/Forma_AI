@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const Form = require("../models/Form");
-const { connectMongo } = require("../db");
+const { connectMongo, disconnectMongo } = require("../db");
 
 dotenv.config();
 
@@ -154,11 +154,9 @@ const seedDatabase = async () => {
       );
     }
 
-    if (mongoose.connection.readyState === 1) {
-      await mongoose.connection.close();
-    }
-
-    process.exit(1);
+    process.exitCode = 1;
+  } finally {
+    await disconnectMongo();
   }
 };
 

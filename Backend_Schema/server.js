@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 
-const { connectMongo } = require("./db");
+const { connectMongo, disconnectMongo } = require("./db");
 const formRoutes = require("./routes/formRoutes");
 
 // Load environment variables
@@ -67,5 +67,14 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
+const gracefulShutdown = async (signal) => {
+  console.log(`Received ${signal}. Shutting down gracefully...`);
+  await disconnectMongo();
+  process.exit(0);
+};
+
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 
 startServer();
