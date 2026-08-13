@@ -1,26 +1,19 @@
 import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import axios from "axios";
-
 import TextField from "./TextField";
 import Checkbox from "./Checkbox";
 import Dropdown from "./DropDown";
 
 function shouldShowField(field, watchedValues) {
   if (!field.showIf) return true;
-
   const { fieldId, equals } = field.showIf;
-
   return watchedValues[fieldId] === equals;
 }
 
-function FormRenderer({ formId = "6a7c88a689bd3a82004abdd3" }) {
-  const [schema, setSchema] = useState(null);
-  const [loading, setLoading] = useState(true);
+function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const { control, handleSubmit, watch } = useForm();
-
   const watchedValues = watch();
 
   useEffect(() => {
@@ -64,6 +57,17 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd3" }) {
 
         const fieldId = field.name || field.fieldId;
         const fieldType = field.type || "text";
+        const validationRules = {
+          ...(field.required ? { required: `${field.label} is required` } : {}),
+          ...(field.validationRegex
+            ? {
+                pattern: {
+                  value: new RegExp(field.validationRegex),
+                  message: `${field.label} format is invalid`,
+               },
+              }
+            : {}),
+        };
 
         if (fieldType === "checkbox") {
           return (
@@ -72,35 +76,40 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd3" }) {
               name={fieldId}
               control={control}
               defaultValue={false}
-              render={({ field: controllerField }) => (
+              rules={
+                field.required
+                  ? { validate: (v) => v === true || `${field.label} is required` }
+                  : {}
+              }
+              render={({ field: controllerField, fieldState }) => (
                 <Checkbox
                   label={field.label}
                   required={field.required}
                   checked={!!controllerField.value}
                   onChange={controllerField.onChange}
+                  error={fieldState.error?.message}
                 />
               )}
             />
           );
         }
 
-        if (
-          fieldType === "dropdown" ||
-          fieldType === "select"
-        ) {
+        if (fieldType === "dropdown" || fieldType === "select") {
           return (
             <Controller
               key={fieldId}
               name={fieldId}
               control={control}
               defaultValue=""
-              render={({ field: controllerField }) => (
+              rules={validationRules}
+              render={({ field: controllerField, fieldState }) => (
                 <Dropdown
                   label={field.label}
                   required={field.required}
                   options={field.options || []}
                   value={controllerField.value}
                   onChange={controllerField.onChange}
+                  error={fieldState.error?.message}
                 />
               )}
             />
@@ -113,7 +122,8 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd3" }) {
             name={fieldId}
             control={control}
             defaultValue=""
-            render={({ field: controllerField }) => (
+            rules={validationRules}
+            render={({ field: controllerField, fieldState }) => (
               <TextField
                 id={fieldId}
                 label={field.label}
@@ -121,6 +131,7 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd3" }) {
                 value={controllerField.value}
                 onChange={controllerField.onChange}
                 placeholder={field.placeholder || ""}
+                error={fieldState.error?.message}
               />
             )}
           />
