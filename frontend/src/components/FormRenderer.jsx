@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import axios from "axios";
 import TextField from "./TextField";
 import Checkbox from "./Checkbox";
@@ -8,13 +8,17 @@ import Dropdown from "./DropDown";
 function shouldShowField(field, watchedValues) {
   if (!field.showIf) return true;
   const { fieldId, equals } = field.showIf;
-  return watchedValues[fieldId] === equals;
+  return watchedValues?.[fieldId] === equals;
 }
 
-function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {  const [loading, setLoading] = useState(true);
+function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
+  const [schema, setSchema] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { control, handleSubmit, watch } = useForm();
-  const watchedValues = watch();
+  const [submissionError, setSubmissionError] = useState(null);
+  const [submissionSuccess, setSubmissionSuccess] = useState(null);
+  const { control, handleSubmit } = useForm();
+  const watchedValues = useWatch({ control });
 
   useEffect(() => {
     axios
@@ -30,8 +34,25 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {  const [loading
       });
   }, [formId]);
 
-  const onSubmit = (data) => {
-    console.log("Form submitted:", data);
+  const onSubmit = async (data) => {
+    setSubmissionError(null);
+    setSubmissionSuccess(null);
+
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/api/forms/${formId}/submit`,
+        data
+      );
+      setSubmissionSuccess(response.data.message);
+    } catch (submitError) {
+      const responseData = submitError.response?.data;
+      const missingFields = responseData?.fields?.join(", ");
+      setSubmissionError(
+        missingFields
+          ? `${responseData.error}: ${missingFields}`
+          : responseData?.error || "Could not submit the form. Please try again."
+      );
+    }
   };
 
   if (loading) {
@@ -64,7 +85,7 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {  const [loading
                 pattern: {
                   value: new RegExp(field.validationRegex),
                   message: `${field.label} format is invalid`,
-               },
+                },
               }
             : {}),
         };
@@ -139,9 +160,10 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {  const [loading
       })}
 
       <button type="submit">Submit</button>
+      {submissionSuccess && <p role="status">{submissionSuccess}</p>}
+      {submissionError && <p role="alert">{submissionError}</p>}
     </form>
   );
 }
 
-export { shouldShowField };
 export default FormRenderer;

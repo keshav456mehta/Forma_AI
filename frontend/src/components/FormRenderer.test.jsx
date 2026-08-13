@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import axios from "axios";
 import FormRenderer from "./FormRenderer";
@@ -79,5 +79,29 @@ describe("FormRenderer", () => {
     expect(await screen.findByText("Student Form")).toBeInTheDocument();
 
     expect(screen.queryByLabelText("College Name")).not.toBeInTheDocument();
+  });
+
+  it("submits the frontend payload to the validation endpoint", async () => {
+    axios.get.mockResolvedValue({
+      data: {
+        title: "Student Form",
+        fields: [{ name: "name", label: "Name" }],
+      },
+    });
+    axios.post.mockResolvedValue({ data: { message: "Submission is valid" } });
+
+    render(<FormRenderer formId="form-id" />);
+
+    const input = await screen.findByLabelText("Name");
+    fireEvent.change(input, { target: { value: "Vinay" } });
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Submission is valid"
+    );
+    expect(axios.post).toHaveBeenCalledWith(
+      "http://localhost:5000/api/forms/form-id/submit",
+      { name: "Vinay" }
+    );
   });
 });
