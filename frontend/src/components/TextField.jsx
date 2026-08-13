@@ -1,34 +1,17 @@
+// TextField.jsx
 import Label from "./Label";
 
-export default function TextField({
-  id,
-  label,
-  required,
-  error,
-  value,
-  onChange,
-  placeholder,
-}) {
+export default function TextField({ label, required, error, ...props }) {
   return (
     <div className="mb-4">
-      {label && (
-        <Label htmlFor={id} required={required}>
-          {label}
-        </Label>
-      )}
+      <Label text={label} required={required} />
       <input
-        id={id}
-        type="text"
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 ${
-          error
-            ? "border-red-500 focus:ring-red-300"
-            : "border-gray-300 focus:ring-blue-300"
-        }`}
+        className={`w-full px-3 py-2 rounded-md border text-sm
+          ${error ? "border-red-500" : "border-gray-300"}
+          focus:outline-none focus:ring-2 focus:ring-blue-400`}
+        {...props}
       />
-      {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );
 }
