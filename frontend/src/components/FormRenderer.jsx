@@ -1,6 +1,6 @@
 // FormRenderer.jsx
 import TextField from "./TextField";
-import Dropdown from "./Dropdown";
+import Dropdown from "./DropDown";
 import Checkbox from "./Checkbox";
 
 export default function FormRenderer({ fields }) {
