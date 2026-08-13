@@ -1,13 +1,20 @@
 import { useState, useEffect } from "react";
+
 import { useForm, Controller, useWatch } from "react-hook-form";
+
+import { useForm } from "react-hook-form";
+
 import axios from "axios";
+
 import TextField from "./TextField";
 import Checkbox from "./Checkbox";
 import Dropdown from "./DropDown";
 
 function shouldShowField(field, watchedValues) {
   if (!field.showIf) return true;
+
   const { fieldId, equals } = field.showIf;
+
   return watchedValues?.[fieldId] === equals;
 }
 
@@ -19,6 +26,26 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
   const [submissionSuccess, setSubmissionSuccess] = useState(null);
   const { control, handleSubmit } = useForm();
   const watchedValues = useWatch({ control });
+=======
+
+  return watchedValues[fieldId] === equals;
+}
+
+function FormRenderer({
+  formId = "6a7ac008bb3e76cb84c1dc72",
+}) {
+  const [schema, setSchema] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+  } = useForm();
+
+  const watchedValues = watch();
+
 
   useEffect(() => {
     axios
@@ -29,7 +56,9 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
       })
       .catch((err) => {
         console.error("Failed to fetch schema:", err);
-        setError("Could not load the form. Is the backend running?");
+        setError(
+          "Could not load the form. Is the backend running?"
+        );
         setLoading(false);
       });
   }, [formId]);
@@ -60,7 +89,11 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
   }
 
   if (error) {
-    return <p style={{ color: "red" }}>{error}</p>;
+    return (
+      <p style={{ color: "red" }}>
+        {error}
+      </p>
+    );
   }
 
   if (!schema || !schema.fields) {
@@ -69,15 +102,15 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <h2>{schema.title || schema.formName}</h2>
+      <h2>{schema.title}</h2>
 
       {schema.fields.map((field) => {
         if (!shouldShowField(field, watchedValues)) {
           return null;
         }
 
-        const fieldId = field.name || field.fieldId;
         const fieldType = field.type || "text";
+
         const validationRules = {
           ...(field.required ? { required: `${field.label} is required` } : {}),
           ...(field.validationRegex
@@ -90,78 +123,101 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
             : {}),
         };
 
+
         if (fieldType === "checkbox") {
           return (
-            <Controller
-              key={fieldId}
-              name={fieldId}
-              control={control}
-              defaultValue={false}
-              rules={
-                field.required
-                  ? { validate: (v) => v === true || `${field.label} is required` }
-                  : {}
-              }
-              render={({ field: controllerField, fieldState }) => (
-                <Checkbox
-                  label={field.label}
-                  required={field.required}
-                  checked={!!controllerField.value}
-                  onChange={controllerField.onChange}
-                  error={fieldState.error?.message}
-                />
-              )}
+            <Checkbox
+              key={field.name || field.id}
+              id={field.name || field.id}
+              label={field.label}
+              required={field.required}
+              {...register(field.name, {
+                required: field.required,
+              })}
             />
           );
         }
 
-        if (fieldType === "dropdown" || fieldType === "select") {
+        if (fieldType === "dropdown") {
           return (
-            <Controller
-              key={fieldId}
-              name={fieldId}
-              control={control}
-              defaultValue=""
-              rules={validationRules}
-              render={({ field: controllerField, fieldState }) => (
-                <Dropdown
-                  label={field.label}
-                  required={field.required}
-                  options={field.options || []}
-                  value={controllerField.value}
-                  onChange={controllerField.onChange}
-                  error={fieldState.error?.message}
-                />
-              )}
-            />
+            <div
+              key={field.name || field.id}
+              className="mb-4"
+            >
+              <label
+                htmlFor={field.name}
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                {field.label}
+
+                {field.required && (
+                  <span className="text-red-500 ml-1">
+                    *
+                  </span>
+                )}
+              </label>
+
+              <select
+                id={field.name}
+                {...register(field.name, {
+                  required: field.required,
+                })}
+                className="w-full px-3 py-2 border rounded-md"
+                defaultValue=""
+              >
+                <option value="">
+                  Select an option
+                </option>
+
+                {(field.options || []).map((option) => {
+                  const value =
+                    typeof option === "string"
+                      ? option
+                      : option.value;
+
+                  const label =
+                    typeof option === "string"
+                      ? option
+                      : option.label;
+
+                  return (
+                    <option
+                      key={value}
+                      value={value}
+                    >
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
           );
         }
 
         return (
-          <Controller
-            key={fieldId}
-            name={fieldId}
-            control={control}
-            defaultValue=""
-            rules={validationRules}
-            render={({ field: controllerField, fieldState }) => (
-              <TextField
-                id={fieldId}
-                label={field.label}
-                required={field.required}
-                value={controllerField.value}
-                onChange={controllerField.onChange}
-                placeholder={field.placeholder || ""}
-                error={fieldState.error?.message}
-              />
-            )}
+          <TextField
+            key={field.name || field.id}
+            id={field.name || field.id}
+            name={field.name}
+            label={field.label}
+            required={field.required}
+            placeholder={field.placeholder}
+            {...register(field.name, {
+              required: field.required,
+            })}
           />
         );
       })}
 
+
       <button type="submit">Submit</button>
       {submissionSuccess && <p role="status">{submissionSuccess}</p>}
       {submissionError && <p role="alert">{submissionError}</p>}
+
+      <button type="submit">
+        Submit
+      </button>
+
     </form>
   );
 }

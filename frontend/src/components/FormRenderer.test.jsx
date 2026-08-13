@@ -1,5 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+
 import { fireEvent, render, screen } from "@testing-library/react";
+
+import { render, screen } from "@testing-library/react";
+
 import "@testing-library/jest-dom/vitest";
 import axios from "axios";
 import FormRenderer from "./FormRenderer";
@@ -18,7 +22,9 @@ describe("FormRenderer", () => {
 
     render(<FormRenderer />);
 
-    expect(screen.getByText("Loading form...")).toBeInTheDocument();
+    expect(
+      screen.getByText("Loading form...")
+    ).toBeInTheDocument();
   });
 
   it("renders the form after successfully loading the schema", async () => {
@@ -36,13 +42,25 @@ describe("FormRenderer", () => {
 
     render(<FormRenderer />);
 
-    expect(await screen.findByText("Student Form")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Submit" })).toBeInTheDocument();
+    expect(
+      await screen.findByText("Student Form")
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByLabelText("Name")
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", {
+        name: "Submit",
+      })
+    ).toBeInTheDocument();
   });
 
   it("shows an error message when the API request fails", async () => {
-    axios.get.mockRejectedValue(new Error("API error"));
+    axios.get.mockRejectedValue(
+      new Error("API error")
+    );
 
     render(<FormRenderer />);
 
@@ -76,9 +94,83 @@ describe("FormRenderer", () => {
 
     render(<FormRenderer />);
 
-    expect(await screen.findByText("Student Form")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Student Form")
+    ).toBeInTheDocument();
 
-    expect(screen.queryByLabelText("College Name")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("College Name")
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders a dropdown field with options", async () => {
+    axios.get.mockResolvedValue({
+      data: {
+        title: "Student Form",
+        fields: [
+          {
+            name: "course",
+            label: "Course",
+            type: "dropdown",
+            options: [
+              {
+                value: "cse",
+                label: "Computer Science",
+              },
+              {
+                value: "ece",
+                label: "Electronics",
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    render(<FormRenderer />);
+
+    expect(
+      await screen.findByText("Student Form")
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByLabelText("Course")
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("option", {
+        name: "Computer Science",
+      })
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("option", {
+        name: "Electronics",
+      })
+    ).toBeInTheDocument();
+  });
+
+  it("renders a checkbox field", async () => {
+    axios.get.mockResolvedValue({
+      data: {
+        title: "Student Form",
+        fields: [
+          {
+            name: "isStudent",
+            label: "Are you a student?",
+            type: "checkbox",
+          },
+        ],
+      },
+    });
+
+    render(<FormRenderer />);
+
+    expect(
+      await screen.findByLabelText(
+        "Are you a student?"
+      )
+    ).toBeInTheDocument();
   });
 
   it("submits the frontend payload to the validation endpoint", async () => {

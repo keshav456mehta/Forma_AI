@@ -3,10 +3,13 @@ import Label from "./Label";
 export default function TextField({
   id,
   label,
-  required,
+  required = false,
   error,
   value,
   onChange,
+  onBlur,
+  name,
+  inputRef,
   placeholder,
 }) {
   return (
@@ -16,11 +19,15 @@ export default function TextField({
           {label}
         </Label>
       )}
+
       <input
         id={id}
+        name={name}
         type="text"
-        value={value}
+        value={value ?? ""}
         onChange={onChange}
+        onBlur={onBlur}
+        ref={inputRef}
         placeholder={placeholder}
         className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 ${
           error
@@ -28,7 +35,12 @@ export default function TextField({
             : "border-gray-300 focus:ring-blue-300"
         }`}
       />
-      {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
+
+      {error && (
+        <p className="text-sm text-red-500 mt-1">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
