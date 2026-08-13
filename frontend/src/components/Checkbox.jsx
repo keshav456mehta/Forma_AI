@@ -1,25 +1,20 @@
-export default function Checkbox({
-  label,
-  required = false,
-  checked,
-  onChange,
-  error,
-}) {
+// Checkbox.jsx
+import Label from "./Label";
+
+export default function Checkbox({ label, required, error, ...props }) {
   return (
     <div className="mb-4">
-      <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+      <div className="flex items-center gap-2">
         <input
           type="checkbox"
-          checked={checked}
-          onChange={onChange}
-          className={`h-4 w-4 rounded border focus:ring-2 focus:ring-blue-400
-            ${error ? "border-red-500" : "border-gray-300"}`}
+          className={`h-4 w-4 rounded border
+            ${error ? "border-red-500" : "border-gray-300"}
+            focus:ring-2 focus:ring-blue-400`}
+          {...props}
         />
-        {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
-      </label>
-
-      {error && <p className="text-red-500 text-xs mt-1 ml-6">{error}</p>}
+        <Label text={label} required={required} inline />
+      </div>
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );
 }
