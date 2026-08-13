@@ -1,11 +1,7 @@
 // FormRenderer.jsx
-import TextField from "./TextField";
-import Dropdown from "./DropDown";
-import Checkbox from "./Checkbox";
-
 export default function FormRenderer({ fields }) {
   return (
-    <div className="max-w-md mx-auto py-6">
+    <div className="w-full max-w-md mx-auto px-4 sm:px-6 py-6">
       {fields.map((field) => {
         switch (field.type) {
           case "text":
