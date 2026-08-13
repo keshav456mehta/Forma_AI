@@ -1,1 +1,3 @@
-Forma_AI/
+backend/.env
+frontend/.env
+*.env.local

@@ -3,7 +3,7 @@ import Label from "./Label";
 export default function TextField({
   id,
   label,
-  required,
+  required = false,
   error,
   value,
   onChange,

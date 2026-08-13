@@ -14,7 +14,9 @@ function shouldShowField(field, watchedValues) {
   return watchedValues[fieldId] === equals;
 }
 
-function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
+function FormRenderer({
+  formId = "6a7ac008bb3e76cb84c1dc72",
+}) {
   const [schema, setSchema] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -36,7 +38,9 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
       })
       .catch((err) => {
         console.error("Failed to fetch schema:", err);
-        setError("Could not load the form. Is the backend running?");
+        setError(
+          "Could not load the form. Is the backend running?"
+        );
         setLoading(false);
       });
   }, [formId]);
@@ -50,7 +54,11 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
   }
 
   if (error) {
-    return <p style={{ color: "red" }}>{error}</p>;
+    return (
+      <p style={{ color: "red" }}>
+        {error}
+      </p>
+    );
   }
 
   if (!schema || !schema.fields) {
@@ -59,7 +67,7 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <h2>{schema.title || schema.formName}</h2>
+      <h2>{schema.title}</h2>
 
       {schema.fields.map((field) => {
         if (!shouldShowField(field, watchedValues)) {
@@ -71,7 +79,8 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
         if (fieldType === "checkbox") {
           return (
             <Checkbox
-              key={field.name}
+              key={field.name || field.id}
+              id={field.name || field.id}
               label={field.label}
               required={field.required}
               {...register(field.name, {
@@ -83,14 +92,20 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
 
         if (fieldType === "dropdown") {
           return (
-            <div key={field.name} className="mb-4">
+            <div
+              key={field.name || field.id}
+              className="mb-4"
+            >
               <label
                 htmlFor={field.name}
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
                 {field.label}
+
                 {field.required && (
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="text-red-500 ml-1">
+                    *
+                  </span>
                 )}
               </label>
 
@@ -102,7 +117,9 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
                 className="w-full px-3 py-2 border rounded-md"
                 defaultValue=""
               >
-                <option value="">Select an option</option>
+                <option value="">
+                  Select an option
+                </option>
 
                 {(field.options || []).map((option) => {
                   const value =
@@ -116,7 +133,10 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
                       : option.label;
 
                   return (
-                    <option key={value} value={value}>
+                    <option
+                      key={value}
+                      value={value}
+                    >
                       {label}
                     </option>
                   );
@@ -128,8 +148,9 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
 
         return (
           <TextField
-            key={field.name}
-            id={field.name}
+            key={field.name || field.id}
+            id={field.name || field.id}
+            name={field.name}
             label={field.label}
             required={field.required}
             placeholder={field.placeholder}
@@ -140,7 +161,9 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
         );
       })}
 
-      <button type="submit">Submit</button>
+      <button type="submit">
+        Submit
+      </button>
     </form>
   );
 }
