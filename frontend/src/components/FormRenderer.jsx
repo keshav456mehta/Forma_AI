@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
-import { useForm, Controller, useWatch } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import axios from "axios";
+
 import TextField from "./TextField";
 import Checkbox from "./Checkbox";
 import Dropdown from "./DropDown";
 
 function shouldShowField(field, watchedValues) {
   if (!field.showIf) return true;
+
   const { fieldId, equals } = field.showIf;
   return watchedValues?.[fieldId] === equals;
 }
@@ -27,8 +29,8 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
         setSchema(res.data);
         setLoading(false);
       })
-      .catch((err) => {
-        console.error("Failed to fetch schema:", err);
+      .catch((requestError) => {
+        console.error("Failed to fetch schema:", requestError);
         setError("Could not load the form. Is the backend running?");
         setLoading(false);
       });
@@ -55,28 +57,18 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
     }
   };
 
-  if (loading) {
-    return <p>Loading form...</p>;
-  }
-
-  if (error) {
-    return <p style={{ color: "red" }}>{error}</p>;
-  }
-
-  if (!schema || !schema.fields) {
-    return <p>No form fields available.</p>;
-  }
+  if (loading) return <p>Loading form...</p>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
+  if (!schema?.fields) return <p>No form fields available.</p>;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <h2>{schema.title || schema.formName}</h2>
 
       {schema.fields.map((field) => {
-        if (!shouldShowField(field, watchedValues)) {
-          return null;
-        }
+        if (!shouldShowField(field, watchedValues)) return null;
 
-        const fieldId = field.name || field.fieldId;
+        const fieldId = field.name || field.fieldId || field.id;
         const fieldType = field.type || "text";
         const validationRules = {
           ...(field.required ? { required: `${field.label} is required` } : {}),
@@ -99,14 +91,15 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
               defaultValue={false}
               rules={
                 field.required
-                  ? { validate: (v) => v === true || `${field.label} is required` }
+                  ? { validate: (value) => value || `${field.label} is required` }
                   : {}
               }
               render={({ field: controllerField, fieldState }) => (
                 <Checkbox
+                  id={fieldId}
                   label={field.label}
                   required={field.required}
-                  checked={!!controllerField.value}
+                  checked={Boolean(controllerField.value)}
                   onChange={controllerField.onChange}
                   error={fieldState.error?.message}
                 />
@@ -125,11 +118,14 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
               rules={validationRules}
               render={({ field: controllerField, fieldState }) => (
                 <Dropdown
+                  id={fieldId}
                   label={field.label}
                   required={field.required}
                   options={field.options || []}
                   value={controllerField.value}
                   onChange={controllerField.onChange}
+                  onBlur={controllerField.onBlur}
+                  name={controllerField.name}
                   error={fieldState.error?.message}
                 />
               )}
@@ -151,6 +147,9 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
                 required={field.required}
                 value={controllerField.value}
                 onChange={controllerField.onChange}
+                onBlur={controllerField.onBlur}
+                name={controllerField.name}
+                inputRef={controllerField.ref}
                 placeholder={field.placeholder || ""}
                 error={fieldState.error?.message}
               />
