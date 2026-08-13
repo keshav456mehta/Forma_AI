@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
+
+import { useForm, Controller, useWatch } from "react-hook-form";
+
 import { useForm } from "react-hook-form";
+
 import axios from "axios";
 
 import TextField from "./TextField";
@@ -10,6 +14,19 @@ function shouldShowField(field, watchedValues) {
   if (!field.showIf) return true;
 
   const { fieldId, equals } = field.showIf;
+
+  return watchedValues?.[fieldId] === equals;
+}
+
+function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
+  const [schema, setSchema] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [submissionError, setSubmissionError] = useState(null);
+  const [submissionSuccess, setSubmissionSuccess] = useState(null);
+  const { control, handleSubmit } = useForm();
+  const watchedValues = useWatch({ control });
+=======
 
   return watchedValues[fieldId] === equals;
 }
@@ -29,6 +46,7 @@ function FormRenderer({
 
   const watchedValues = watch();
 
+
   useEffect(() => {
     axios
       .get(`http://localhost:5000/api/forms/${formId}`)
@@ -45,8 +63,25 @@ function FormRenderer({
       });
   }, [formId]);
 
-  const onSubmit = (data) => {
-    console.log("Form submitted:", data);
+  const onSubmit = async (data) => {
+    setSubmissionError(null);
+    setSubmissionSuccess(null);
+
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/api/forms/${formId}/submit`,
+        data
+      );
+      setSubmissionSuccess(response.data.message);
+    } catch (submitError) {
+      const responseData = submitError.response?.data;
+      const missingFields = responseData?.fields?.join(", ");
+      setSubmissionError(
+        missingFields
+          ? `${responseData.error}: ${missingFields}`
+          : responseData?.error || "Could not submit the form. Please try again."
+      );
+    }
   };
 
   if (loading) {
@@ -75,6 +110,19 @@ function FormRenderer({
         }
 
         const fieldType = field.type || "text";
+
+        const validationRules = {
+          ...(field.required ? { required: `${field.label} is required` } : {}),
+          ...(field.validationRegex
+            ? {
+                pattern: {
+                  value: new RegExp(field.validationRegex),
+                  message: `${field.label} format is invalid`,
+                },
+              }
+            : {}),
+        };
+
 
         if (fieldType === "checkbox") {
           return (
@@ -161,12 +209,17 @@ function FormRenderer({
         );
       })}
 
+
+      <button type="submit">Submit</button>
+      {submissionSuccess && <p role="status">{submissionSuccess}</p>}
+      {submissionError && <p role="alert">{submissionError}</p>}
+
       <button type="submit">
         Submit
       </button>
+
     </form>
   );
 }
 
-export { shouldShowField };
 export default FormRenderer;
