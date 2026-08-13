@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import axios from "axios";
 
 import TextField from "./TextField";
@@ -19,7 +19,11 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const { control, handleSubmit, watch } = useForm();
+  const {
+    register,
+    handleSubmit,
+    watch,
+  } = useForm();
 
   const watchedValues = watch();
 
@@ -62,67 +66,76 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
           return null;
         }
 
-        const fieldId = field.name || field.fieldId;
         const fieldType = field.type || "text";
 
         if (fieldType === "checkbox") {
           return (
-            <Controller
-              key={fieldId}
-              name={fieldId}
-              control={control}
-              defaultValue={false}
-              render={({ field: controllerField }) => (
-                <Checkbox
-                  label={field.label}
-                  required={field.required}
-                  checked={!!controllerField.value}
-                  onChange={controllerField.onChange}
-                />
-              )}
+            <Checkbox
+              key={field.name}
+              label={field.label}
+              required={field.required}
+              {...register(field.name, {
+                required: field.required,
+              })}
             />
           );
         }
 
-        if (
-          fieldType === "dropdown" ||
-          fieldType === "select"
-        ) {
+        if (fieldType === "dropdown") {
           return (
-            <Controller
-              key={fieldId}
-              name={fieldId}
-              control={control}
-              defaultValue=""
-              render={({ field: controllerField }) => (
-                <Dropdown
-                  label={field.label}
-                  required={field.required}
-                  options={field.options || []}
-                  value={controllerField.value}
-                  onChange={controllerField.onChange}
-                />
-              )}
-            />
+            <div key={field.name} className="mb-4">
+              <label
+                htmlFor={field.name}
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                {field.label}
+                {field.required && (
+                  <span className="text-red-500 ml-1">*</span>
+                )}
+              </label>
+
+              <select
+                id={field.name}
+                {...register(field.name, {
+                  required: field.required,
+                })}
+                className="w-full px-3 py-2 border rounded-md"
+                defaultValue=""
+              >
+                <option value="">Select an option</option>
+
+                {(field.options || []).map((option) => {
+                  const value =
+                    typeof option === "string"
+                      ? option
+                      : option.value;
+
+                  const label =
+                    typeof option === "string"
+                      ? option
+                      : option.label;
+
+                  return (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
           );
         }
 
         return (
-          <Controller
-            key={fieldId}
-            name={fieldId}
-            control={control}
-            defaultValue=""
-            render={({ field: controllerField }) => (
-              <TextField
-                id={fieldId}
-                label={field.label}
-                required={field.required}
-                value={controllerField.value}
-                onChange={controllerField.onChange}
-                placeholder={field.placeholder || ""}
-              />
-            )}
+          <TextField
+            key={field.name}
+            id={field.name}
+            label={field.label}
+            required={field.required}
+            placeholder={field.placeholder}
+            {...register(field.name, {
+              required: field.required,
+            })}
           />
         );
       })}
