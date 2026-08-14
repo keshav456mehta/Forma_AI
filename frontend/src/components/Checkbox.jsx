@@ -2,9 +2,8 @@ export default function Checkbox({
   id,
   label,
   required = false,
-  checked,
-  onChange,
   error,
+  ...props
 }) {
   return (
     <div className="mb-4">
@@ -15,11 +14,10 @@ export default function Checkbox({
         <input
           id={id}
           type="checkbox"
-          checked={checked}
-          onChange={onChange}
           className={`h-4 w-4 rounded border focus:ring-2 focus:ring-blue-400 ${
             error ? "border-red-500" : "border-gray-300"
           }`}
+          {...props}
         />
 
         {label}
