@@ -20,6 +20,7 @@ function FormRenderer({
   const [schema, setSchema] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [submissionStatus, setSubmissionStatus] = useState("");
 
   const {
     register,
@@ -45,15 +46,37 @@ function FormRenderer({
       });
   }, [formId]);
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     console.log("Form submitted:", data);
+
+    setSubmissionStatus("");
+    setError(null);
+
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/api/forms/${formId}/submit`,
+        data
+      );
+
+      setSubmissionStatus(
+        response.data.message || "Submission is valid"
+      );
+    } catch (err) {
+      console.error("Failed to submit form:", err);
+
+      const message =
+        err.response?.data?.error ||
+        "Failed to submit the form.";
+
+      setError(message);
+    }
   };
 
   if (loading) {
     return <p>Loading form...</p>;
   }
 
-  if (error) {
+  if (error && !schema) {
     return (
       <p style={{ color: "red" }}>
         {error}
@@ -104,57 +127,17 @@ function FormRenderer({
 
         if (fieldType === "dropdown") {
           return (
-            <div
+            <Dropdown
               key={fieldId}
-              className="mb-4"
-            >
-              <label
-                htmlFor={fieldId}
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                {field.label}
-
-                {field.required && (
-                  <span className="text-red-500 ml-1">
-                    *
-                  </span>
-                )}
-              </label>
-
-              <select
-                id={fieldId}
-                {...register(field.name, {
-                  required: field.required,
-                })}
-                className="w-full px-3 py-2 rounded-md border text-sm bg-white border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                defaultValue=""
-              >
-                <option value="">
-                  Select an option
-                </option>
-
-                {(field.options || []).map((option) => {
-                  const value =
-                    typeof option === "string"
-                      ? option
-                      : option.value;
-
-                  const label =
-                    typeof option === "string"
-                      ? option
-                      : option.label;
-
-                  return (
-                    <option
-                      key={value}
-                      value={value}
-                    >
-                      {label}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
+              id={fieldId}
+              name={field.name}
+              label={field.label}
+              required={field.required}
+              options={field.options || []}
+              {...register(field.name, {
+                required: field.required,
+              })}
+            />
           );
         }
 
@@ -179,6 +162,24 @@ function FormRenderer({
       >
         Submit
       </button>
+
+      {submissionStatus && (
+        <p
+          role="status"
+          className="mt-4 text-green-600"
+        >
+          {submissionStatus}
+        </p>
+      )}
+
+      {error && (
+        <p
+          role="alert"
+          className="mt-4 text-red-500"
+        >
+          {error}
+        </p>
+      )}
     </form>
   );
 }
