@@ -6,6 +6,8 @@ import TextField from "./TextField";
 import Checkbox from "./Checkbox";
 import Dropdown from "./DropDown";
 
+// Returns true if a field should be visible, based on its showIf rule
+// (e.g. only show "Insurance Company" if "hasInsurance" === "Yes").
 function shouldShowField(field, watchedValues) {
   if (!field.showIf) return true;
 
@@ -22,6 +24,7 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
   const { control, handleSubmit } = useForm();
   const watchedValues = useWatch({ control });
 
+  // Fetch the form schema from the backend whenever formId changes.
   useEffect(() => {
     axios
       .get(`http://localhost:5000/api/forms/${formId}`)
@@ -29,13 +32,13 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
         setSchema(res.data);
         setLoading(false);
       })
-      .catch((requestError) => {
-        console.error("Failed to fetch schema:", requestError);
+      .catch(() => {
         setError("Could not load the form. Is the backend running?");
         setLoading(false);
       });
   }, [formId]);
 
+  // Submit the filled-in form data to the backend for validation/storage.
   const onSubmit = async (data) => {
     setSubmissionError(null);
     setSubmissionSuccess(null);
@@ -66,10 +69,14 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
       <h2>{schema.title || schema.formName}</h2>
 
       {schema.fields.map((field) => {
+        // Skip fields whose showIf condition isn't currently satisfied.
         if (!shouldShowField(field, watchedValues)) return null;
 
         const fieldId = field.name || field.fieldId || field.id;
         const fieldType = field.type || "text";
+
+        // Build react-hook-form validation rules from the schema:
+        // required-field check, plus an optional regex pattern check.
         const validationRules = {
           ...(field.required ? { required: `${field.label} is required` } : {}),
           ...(field.validationRegex
@@ -133,6 +140,7 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
           );
         }
 
+        // Default case: render as a text field.
         return (
           <Controller
             key={fieldId}
