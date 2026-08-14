@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import axios from "axios";
 
 import TextField from "./TextField";
@@ -12,17 +12,25 @@ function shouldShowField(field, watchedValues) {
   if (!field.showIf) return true;
 
   const { fieldId, equals } = field.showIf;
-  return watchedValues?.[fieldId] === equals;
+
+  return watchedValues[fieldId] === equals;
 }
 
-function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
+function FormRenderer({
+  formId = "6a7ac008bb3e76cb84c1dc72",
+}) {
   const [schema, setSchema] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [submissionError, setSubmissionError] = useState(null);
-  const [submissionSuccess, setSubmissionSuccess] = useState(null);
-  const { control, handleSubmit } = useForm();
-  const watchedValues = useWatch({ control });
+  const [submissionStatus, setSubmissionStatus] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+  } = useForm();
+
+  const watchedValues = watch();
 
   // Fetch the form schema from the backend whenever formId changes.
   useEffect(() => {
@@ -32,48 +40,89 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
         setSchema(res.data);
         setLoading(false);
       })
+
       .catch(() => {
         setError("Could not load the form. Is the backend running?");
+
+      .catch((err) => {
+        console.error("Failed to fetch schema:", err);
+        setError(
+          "Could not load the form. Is the backend running?"
+        );
         setLoading(false);
       });
   }, [formId]);
 
   // Submit the filled-in form data to the backend for validation/storage.
   const onSubmit = async (data) => {
-    setSubmissionError(null);
-    setSubmissionSuccess(null);
+    console.log("Form submitted:", data);
+
+    setSubmissionStatus("");
+    setError(null);
 
     try {
       const response = await axios.post(
         `http://localhost:5000/api/forms/${formId}/submit`,
         data
       );
-      setSubmissionSuccess(response.data.message);
-    } catch (submitError) {
-      const responseData = submitError.response?.data;
-      const missingFields = responseData?.fields?.join(", ");
-      setSubmissionError(
-        missingFields
-          ? `${responseData.error}: ${missingFields}`
-          : responseData?.error || "Could not submit the form. Please try again."
+
+      setSubmissionStatus(
+        response.data.message || "Submission is valid"
       );
+    } catch (err) {
+      console.error("Failed to submit form:", err);
+
+      const message =
+        err.response?.data?.error ||
+        "Failed to submit the form.";
+
+      setError(message);
     }
   };
 
-  if (loading) return <p>Loading form...</p>;
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
-  if (!schema?.fields) return <p>No form fields available.</p>;
+  if (loading) {
+    return <p>Loading form...</p>;
+  }
+
+  if (error && !schema) {
+    return (
+      <p style={{ color: "red" }}>
+        {error}
+      </p>
+    );
+  }
+
+  if (!schema || !schema.fields) {
+    return <p>No form fields available.</p>;
+  }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <h2>{schema.title || schema.formName}</h2>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="w-full max-w-md mx-auto px-4 sm:px-6 py-6"
+    >
+      <h2 className="text-2xl font-bold mb-2">
+        {schema.title}
+      </h2>
+
+      {schema.description && (
+        <p className="text-gray-600 mb-6">
+          {schema.description}
+        </p>
+      )}
 
       {schema.fields.map((field) => {
+
         // Skip fields whose showIf condition isn't currently satisfied.
         if (!shouldShowField(field, watchedValues)) return null;
 
-        const fieldId = field.name || field.fieldId || field.id;
+        if (!shouldShowField(field, watchedValues)) {
+          return null;
+        }
+
+
         const fieldType = field.type || "text";
+
 
         // Build react-hook-form validation rules from the schema:
         // required-field check, plus an optional regex pattern check.
@@ -89,88 +138,84 @@ function FormRenderer({ formId = "6a7c88a689bd3a82004abdd2" }) {
             : {}),
         };
 
+        const fieldId = field.name || field.id;
+
+
         if (fieldType === "checkbox") {
           return (
-            <Controller
+            <Checkbox
               key={fieldId}
-              name={fieldId}
-              control={control}
-              defaultValue={false}
-              rules={
-                field.required
-                  ? { validate: (value) => value || `${field.label} is required` }
-                  : {}
-              }
-              render={({ field: controllerField, fieldState }) => (
-                <Checkbox
-                  id={fieldId}
-                  label={field.label}
-                  required={field.required}
-                  checked={Boolean(controllerField.value)}
-                  onChange={controllerField.onChange}
-                  error={fieldState.error?.message}
-                />
-              )}
+              id={fieldId}
+              label={field.label}
+              required={field.required}
+              {...register(field.name, {
+                required: field.required,
+              })}
             />
           );
         }
 
-        if (fieldType === "dropdown" || fieldType === "select") {
+        if (fieldType === "dropdown") {
           return (
-            <Controller
+            <Dropdown
               key={fieldId}
-              name={fieldId}
-              control={control}
-              defaultValue=""
-              rules={validationRules}
-              render={({ field: controllerField, fieldState }) => (
-                <Dropdown
-                  id={fieldId}
-                  label={field.label}
-                  required={field.required}
-                  options={field.options || []}
-                  value={controllerField.value}
-                  onChange={controllerField.onChange}
-                  onBlur={controllerField.onBlur}
-                  name={controllerField.name}
-                  error={fieldState.error?.message}
-                />
-              )}
+              id={fieldId}
+              name={field.name}
+              label={field.label}
+              required={field.required}
+              options={field.options || []}
+              {...register(field.name, {
+                required: field.required,
+              })}
             />
           );
         }
 
         // Default case: render as a text field.
         return (
-          <Controller
+          <TextField
             key={fieldId}
-            name={fieldId}
-            control={control}
-            defaultValue=""
-            rules={validationRules}
-            render={({ field: controllerField, fieldState }) => (
-              <TextField
-                id={fieldId}
-                label={field.label}
-                required={field.required}
-                value={controllerField.value}
-                onChange={controllerField.onChange}
-                onBlur={controllerField.onBlur}
-                name={controllerField.name}
-                inputRef={controllerField.ref}
-                placeholder={field.placeholder || ""}
-                error={fieldState.error?.message}
-              />
-            )}
+            id={fieldId}
+            name={field.name}
+            label={field.label}
+            required={field.required}
+            placeholder={field.placeholder}
+            {...register(field.name, {
+              required: field.required,
+            })}
           />
         );
       })}
 
-      <button type="submit">Submit</button>
-      {submissionSuccess && <p role="status">{submissionSuccess}</p>}
-      {submissionError && <p role="alert">{submissionError}</p>}
+      <button
+        type="submit"
+        className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50"
+      >
+        Submit
+      </button>
+
+      {submissionStatus && (
+        <p
+          role="status"
+          className="mt-4 text-green-600"
+        >
+          {submissionStatus}
+        </p>
+      )}
+
+      {error && (
+        <p
+          role="alert"
+          className="mt-4 text-red-500"
+        >
+          {error}
+        </p>
+      )}
     </form>
   );
 }
+
+
+export { shouldShowField };
 
 export default FormRenderer;
