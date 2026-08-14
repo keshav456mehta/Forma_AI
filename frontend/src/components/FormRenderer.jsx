@@ -12,13 +12,10 @@ function shouldShowField(field, watchedValues) {
   if (!field.showIf) return true;
 
   const { fieldId, equals } = field.showIf;
-
-  return watchedValues[fieldId] === equals;
+  return watchedValues?.[fieldId] === equals;
 }
 
-function FormRenderer({
-  formId = "6a7ac008bb3e76cb84c1dc72",
-}) {
+function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
   const [schema, setSchema] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,6 +25,7 @@ function FormRenderer({
     register,
     handleSubmit,
     watch,
+    formState: { errors, isSubmitting },
   } = useForm();
 
   const watchedValues = watch();
@@ -40,23 +38,14 @@ function FormRenderer({
         setSchema(res.data);
         setLoading(false);
       })
-
       .catch(() => {
         setError("Could not load the form. Is the backend running?");
-
-      .catch((err) => {
-        console.error("Failed to fetch schema:", err);
-        setError(
-          "Could not load the form. Is the backend running?"
-        );
         setLoading(false);
       });
   }, [formId]);
 
   // Submit the filled-in form data to the backend for validation/storage.
   const onSubmit = async (data) => {
-    console.log("Form submitted:", data);
-
     setSubmissionStatus("");
     setError(null);
 
@@ -66,16 +55,9 @@ function FormRenderer({
         data
       );
 
-      setSubmissionStatus(
-        response.data.message || "Submission is valid"
-      );
+      setSubmissionStatus(response.data.message || "Submission is valid");
     } catch (err) {
-      console.error("Failed to submit form:", err);
-
-      const message =
-        err.response?.data?.error ||
-        "Failed to submit the form.";
-
+      const message = err.response?.data?.error || "Failed to submit the form.";
       setError(message);
     }
   };
@@ -85,11 +67,7 @@ function FormRenderer({
   }
 
   if (error && !schema) {
-    return (
-      <p style={{ color: "red" }}>
-        {error}
-      </p>
-    );
+    return <p style={{ color: "red" }}>{error}</p>;
   }
 
   if (!schema || !schema.fields) {
@@ -101,33 +79,25 @@ function FormRenderer({
       onSubmit={handleSubmit(onSubmit)}
       className="w-full max-w-md mx-auto px-4 sm:px-6 py-6"
     >
-      <h2 className="text-2xl font-bold mb-2">
-        {schema.title}
-      </h2>
+      <h2 className="text-2xl font-bold mb-2">{schema.title}</h2>
 
       {schema.description && (
-        <p className="text-gray-600 mb-6">
-          {schema.description}
-        </p>
+        <p className="text-gray-600 mb-6">{schema.description}</p>
       )}
 
       {schema.fields.map((field) => {
-
         // Skip fields whose showIf condition isn't currently satisfied.
         if (!shouldShowField(field, watchedValues)) return null;
 
-        if (!shouldShowField(field, watchedValues)) {
-          return null;
-        }
-
-
         const fieldType = field.type || "text";
-
+        const fieldId = field.name || field.id;
 
         // Build react-hook-form validation rules from the schema:
         // required-field check, plus an optional regex pattern check.
         const validationRules = {
-          ...(field.required ? { required: `${field.label} is required` } : {}),
+          ...(field.required
+            ? { required: `${field.label} is required` }
+            : {}),
           ...(field.validationRegex
             ? {
                 pattern: {
@@ -138,8 +108,7 @@ function FormRenderer({
             : {}),
         };
 
-        const fieldId = field.name || field.id;
-
+        const fieldError = errors?.[field.name]?.message;
 
         if (fieldType === "checkbox") {
           return (
@@ -148,9 +117,8 @@ function FormRenderer({
               id={fieldId}
               label={field.label}
               required={field.required}
-              {...register(field.name, {
-                required: field.required,
-              })}
+              error={fieldError}
+              {...register(field.name, validationRules)}
             />
           );
         }
@@ -164,9 +132,8 @@ function FormRenderer({
               label={field.label}
               required={field.required}
               options={field.options || []}
-              {...register(field.name, {
-                required: field.required,
-              })}
+              error={fieldError}
+              {...register(field.name, validationRules)}
             />
           );
         }
@@ -180,41 +147,34 @@ function FormRenderer({
             label={field.label}
             required={field.required}
             placeholder={field.placeholder}
-            {...register(field.name, {
-              required: field.required,
-            })}
+            error={fieldError}
+            {...register(field.name, validationRules)}
           />
         );
       })}
 
       <button
         type="submit"
+        disabled={isSubmitting}
         className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50"
       >
-        Submit
+        {isSubmitting ? "Submitting..." : "Submit"}
       </button>
 
       {submissionStatus && (
-        <p
-          role="status"
-          className="mt-4 text-green-600"
-        >
+        <p role="status" className="mt-4 text-green-600">
           {submissionStatus}
         </p>
       )}
 
       {error && (
-        <p
-          role="alert"
-          className="mt-4 text-red-500"
-        >
+        <p role="alert" className="mt-4 text-red-500">
           {error}
         </p>
       )}
     </form>
   );
 }
-
 
 export { shouldShowField };
 
