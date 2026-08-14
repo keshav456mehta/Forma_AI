@@ -5,6 +5,7 @@ const validateRequiredFields = require("../validateSubmission");
 async function getFormById(req, res) {
   const { id } = req.params;
 
+  // Reject malformed IDs before querying MongoDB so clients get a clear 400.
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ error: "Invalid form ID" });
   }
@@ -12,6 +13,7 @@ async function getFormById(req, res) {
   try {
     const form = await Form.findById(id).lean();
 
+    // A valid ID may still not map to a stored form.
     if (!form) {
       return res.status(404).json({ error: "Form not found" });
     }
@@ -39,6 +41,8 @@ async function submitForm(req, res) {
       return res.status(404).json({ error: "Form not found" });
     }
 
+    // Required fields are evaluated against showIf rules, so hidden fields do
+    // not block a submission while visible required fields do.
     const missingFields = validateRequiredFields(form.fields, req.body);
 
     if (missingFields.length > 0) {
