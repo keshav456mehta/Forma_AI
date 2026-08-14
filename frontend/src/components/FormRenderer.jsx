@@ -66,8 +66,19 @@ function FormRenderer({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <h2>{schema.title}</h2>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="w-full max-w-md mx-auto px-4 sm:px-6 py-6"
+    >
+      <h2 className="text-2xl font-bold mb-2">
+        {schema.title}
+      </h2>
+
+      {schema.description && (
+        <p className="text-gray-600 mb-6">
+          {schema.description}
+        </p>
+      )}
 
       {schema.fields.map((field) => {
         if (!shouldShowField(field, watchedValues)) {
@@ -75,12 +86,13 @@ function FormRenderer({
         }
 
         const fieldType = field.type || "text";
+        const fieldId = field.name || field.id;
 
         if (fieldType === "checkbox") {
           return (
             <Checkbox
-              key={field.name || field.id}
-              id={field.name || field.id}
+              key={fieldId}
+              id={fieldId}
               label={field.label}
               required={field.required}
               {...register(field.name, {
@@ -93,11 +105,11 @@ function FormRenderer({
         if (fieldType === "dropdown") {
           return (
             <div
-              key={field.name || field.id}
+              key={fieldId}
               className="mb-4"
             >
               <label
-                htmlFor={field.name}
+                htmlFor={fieldId}
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
                 {field.label}
@@ -110,11 +122,11 @@ function FormRenderer({
               </label>
 
               <select
-                id={field.name}
+                id={fieldId}
                 {...register(field.name, {
                   required: field.required,
                 })}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 rounded-md border text-sm bg-white border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 defaultValue=""
               >
                 <option value="">
@@ -148,8 +160,8 @@ function FormRenderer({
 
         return (
           <TextField
-            key={field.name || field.id}
-            id={field.name || field.id}
+            key={fieldId}
+            id={fieldId}
             name={field.name}
             label={field.label}
             required={field.required}
@@ -161,7 +173,10 @@ function FormRenderer({
         );
       })}
 
-      <button type="submit">
+      <button
+        type="submit"
+        className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50"
+      >
         Submit
       </button>
     </form>
