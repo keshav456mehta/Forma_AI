@@ -25,6 +25,7 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm();
 
@@ -43,6 +44,29 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
         setLoading(false);
       });
   }, [formId]);
+
+  // Day 8 stub: accepts the AI-extraction response and pre-fills matching
+  // form fields via react-hook-form's setValue().
+  //
+  // ASSUMED SHAPE (not yet confirmed with Member 3 / backend): a flat JSON
+  // object whose keys match schema field names exactly, e.g.
+  //   { incidentType: "animal_collision", vehicle: "Honda", damage: "windshield" }
+  // Once the real /api/forms/:id/extract endpoint exists (Day 9), confirm
+  // this shape matches its actual response and adjust if it doesn't.
+  const applyExtractedData = (extractedData) => {
+    if (!extractedData || !schema?.fields) return;
+
+    schema.fields.forEach((field) => {
+      const fieldName = field.name || field.id;
+      const extractedValue = extractedData[fieldName];
+
+      // Only set fields the extraction actually returned a value for —
+      // leave everything else untouched for manual entry.
+      if (extractedValue !== undefined && extractedValue !== null) {
+        setValue(fieldName, extractedValue, { shouldValidate: true });
+      }
+    });
+  };
 
   // Submit the filled-in form data to the backend for validation/storage.
   const onSubmit = async (data) => {
@@ -176,6 +200,6 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
   );
 }
 
-export { shouldShowField };
+export { shouldShowField};
 
 export default FormRenderer;
