@@ -8,14 +8,14 @@ describe("Schema Validator", () => {
         {
           label: "Name",
           type: "text",
-          required: true
+          required: true,
         },
         {
           label: "Email",
           type: "email",
-          required: true
-        }
-      ]
+          required: true,
+        },
+      ],
     };
 
     const result = validateSchema(schema);
@@ -26,12 +26,7 @@ describe("Schema Validator", () => {
 
   test("rejects schema without formName", () => {
     const schema = {
-      fields: [
-        {
-          label: "Name",
-          type: "text"
-        }
-      ]
+      fields: [{ label: "Name", type: "text" }],
     };
 
     const result = validateSchema(schema);
@@ -44,7 +39,7 @@ describe("Schema Validator", () => {
 
   test("rejects schema without fields", () => {
     const schema = {
-      formName: "Registration Form"
+      formName: "Registration Form",
     };
 
     const result = validateSchema(schema);
@@ -58,19 +53,13 @@ describe("Schema Validator", () => {
   test("rejects field without label", () => {
     const schema = {
       formName: "Registration Form",
-      fields: [
-        {
-          type: "text"
-        }
-      ]
+      fields: [{ type: "text" }],
     };
 
     const result = validateSchema(schema);
 
     expect(result.valid).toBe(false);
-    expect(result.errors).toContain(
-      "Field 1: label is required."
-    );
+    expect(result.errors).toContain("Field 1: label is required.");
   });
 
   test("rejects invalid field type", () => {
@@ -79,9 +68,9 @@ describe("Schema Validator", () => {
       fields: [
         {
           label: "Name",
-          type: "invalid"
-        }
-      ]
+          type: "invalid",
+        },
+      ],
     };
 
     const result = validateSchema(schema);
@@ -99,9 +88,9 @@ describe("Schema Validator", () => {
         {
           label: "Name",
           type: "text",
-          required: "yes"
-        }
-      ]
+          required: "yes",
+        },
+      ],
     };
 
     const result = validateSchema(schema);
