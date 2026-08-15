@@ -7,35 +7,49 @@ const allowedFieldTypes = [
   "select",
   "checkbox",
   "radio",
-  "textarea"
+  "textarea",
 ];
 
+/**
+ * Validates the structure of a Forma AI form schema.
+ *
+ * Required schema properties:
+ * - formName: string
+ * - fields: array
+ *
+ * Every field must contain:
+ * - label: string
+ * - type: one of the supported field types
+ *
+ * The required property is optional but must be boolean when present.
+ */
 function validateSchema(schema) {
   const errors = [];
 
-  // Schema must be an object
+  // The schema itself must be a plain object.
   if (!schema || typeof schema !== "object" || Array.isArray(schema)) {
     return {
       valid: false,
-      errors: ["Schema must be a JSON object."]
+      errors: ["Schema must be a JSON object."],
     };
   }
 
-  // formName is required
+  // A form name is required.
   if (!schema.formName || typeof schema.formName !== "string") {
     errors.push("formName is required and must be a string.");
   }
 
-  // fields is required
+  // A fields array is required.
   if (!Array.isArray(schema.fields)) {
     errors.push("fields is required and must be an array.");
+
     return {
       valid: false,
-      errors
+      errors,
     };
   }
 
-  // Validate every field
+  // Validate every field in the schema.
   schema.fields.forEach((field, index) => {
     if (!field || typeof field !== "object") {
       errors.push(`Field ${index + 1} must be an object.`);
@@ -58,15 +72,13 @@ function validateSchema(schema) {
       field.required !== undefined &&
       typeof field.required !== "boolean"
     ) {
-      errors.push(
-        `Field ${index + 1}: required must be a boolean.`
-      );
+      errors.push(`Field ${index + 1}: required must be a boolean.`);
     }
   });
 
   return {
     valid: errors.length === 0,
-    errors
+    errors,
   };
 }
 

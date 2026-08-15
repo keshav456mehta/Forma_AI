@@ -7,9 +7,14 @@ const fields = [
   { name: "terms", type: "checkbox", required: true },
 ];
 
-describe("validateRequiredFields", () => {
+describe("Required Field Validation", () => {
   test("returns every missing required field", () => {
-    expect(validateRequiredFields(fields, { email: "  ", terms: false })).toEqual([
+    const submission = {
+      email: "  ",
+      terms: false,
+    };
+
+    expect(validateRequiredFields(fields, submission)).toEqual([
       "email",
       "incidentType",
       "terms",
@@ -17,13 +22,13 @@ describe("validateRequiredFields", () => {
   });
 
   test("accepts complete required-field data", () => {
-    expect(
-      validateRequiredFields(fields, {
-        email: "person@example.com",
-        incidentType: "Theft",
-        terms: true,
-      })
-    ).toEqual([]);
+    const submission = {
+      email: "person@example.com",
+      incidentType: "Theft",
+      terms: true,
+    };
+
+    expect(validateRequiredFields(fields, submission)).toEqual([]);
   });
 
   test("does not require a conditional field when it is hidden", () => {
