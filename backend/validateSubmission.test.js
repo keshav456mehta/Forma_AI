@@ -30,4 +30,20 @@ describe("Required Field Validation", () => {
 
     expect(validateRequiredFields(fields, submission)).toEqual([]);
   });
+
+  test("does not require a conditional field when it is hidden", () => {
+    const conditionalFields = [
+      { name: "hasInsurance", type: "dropdown", required: true },
+      {
+        name: "insuranceCompany",
+        type: "text",
+        required: true,
+        showIf: { fieldId: "hasInsurance", equals: "Yes" },
+      },
+    ];
+
+    expect(
+      validateRequiredFields(conditionalFields, { hasInsurance: "No" })
+    ).toEqual([]);
+  });
 });
