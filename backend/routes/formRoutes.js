@@ -38,9 +38,10 @@ router.post("/:id/extract", async (req, res) => {
     const extracted = await extractFromStory(story, form.fields);
     return res.status(200).json(extracted);
   } catch (error) {
+    // Do not expose provider details, raw prompts, or model output to clients.
+    console.error("Form extraction failed:", error.message);
     return res.status(500).json({
       error: "Failed to extract form data",
-      details: error.message,
     });
   }
 });
