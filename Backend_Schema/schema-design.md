@@ -101,3 +101,40 @@ The output should follow this structure:
   "location": "I-95",
   "date": "yesterday"
 }
+
+## Day 9 — LLM Extraction to Form Field Mapping
+
+### Purpose
+
+This mapping defines how LLM extraction entities map
+to the existing dynamic form field names.
+
+| LLM Entity | Form Field Name | Purpose |
+|---|---|---|
+| incidentType | incidentType | Type of incident |
+| vehicle | vehicle | Vehicle involved |
+| damage | damage | Damage reported |
+
+### Mapping Rules
+
+1. LLM extraction keys must use the agreed entity names.
+2. Form field names must remain consistent with the mapping.
+3. Any naming mismatch must be resolved before integration.
+4. The mapping should be directly usable by the frontend
+   when populating form values.
+
+### Example
+
+LLM Output:
+
+{
+  "incidentType": "animal_collision",
+  "vehicle": "Honda",
+  "damage": "windshield"
+}
+
+Mapping:
+
+incidentType → incidentType
+vehicle → vehicle
+damage → damage
