@@ -5,6 +5,11 @@
     "test:backend": "npm --prefix backend test",
     "test:frontend": "npm --prefix frontend test",
     "test:api": "node backend/testApi.js",
-    "test:all": "npm run test:backend && npm run test:frontend && npm run test:api"
+    "test:all": "npm run test:backend && npm run test:frontend && npm run test:api",
+    "dev": "npm --prefix frontend run dev",
+    "start": "concurrently \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.4"
   }
 }
