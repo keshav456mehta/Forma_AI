@@ -103,39 +103,57 @@ function buildMockResponse(story) {
   const lower = story.toLowerCase();
   const extracted = {};
 
-  // Incident type
-  if (lower.includes("accident") || lower.includes("collision")) {
-    extracted.incidentType = "accident";
-  } else if (lower.includes("theft") || lower.includes("stolen")) {
-    extracted.incidentType = "theft";
-  } else if (lower.includes("flood") || lower.includes("water")) {
-    extracted.incidentType = "flood";
+  // ========== Basic Information form fields ==========
+
+  // fullName — extract "My name is X" or "I'm X" or "I am X"
+  const nameMatch = story.match(
+    /(?:my name is|i'm|i am|owner is)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+?)(?:\s+and|\.|,|$)/i
+  );
+  if (nameMatch) extracted.fullName = nameMatch[1].trim();
+
+  // ownerName (Vehicle Registration) — alias for fullName
+  if (nameMatch) extracted.ownerName = nameMatch[1].trim();
+
+  // country — match India, United States, United Kingdom, etc.
+  if (lower.includes("india")) extracted.country = "India";
+  else if (lower.includes("united states") || lower.includes("us"))
+    extracted.country = "United States";
+  else if (lower.includes("united kingdom") || lower.includes("uk"))
+    extracted.country = "United Kingdom";
+
+  // terms checkbox — look for "agree", "accept", "confirm"
+  if (lower.match(/\b(agree|accept|confirm)\b/)) {
+    extracted.terms = true;
   }
 
-  // Vehicle make / model
-  const vehicleMatch = lower.match(
-    /\b(honda|toyota|ford|bmw|tesla|hyundai|maruti|suzuki|kia)\b/
+  // ========== Insurance Claim form fields ==========
+
+  // hasInsurance — yes/no based on "have insurance" or "don't have insurance"
+  if (lower.match(/\b(have|has)\s+insurance\b/)) {
+    extracted.hasInsurance = "Yes";
+  } else if (lower.match(/\b(don't|do not|no)\s+(have\s+)?insurance\b/)) {
+    extracted.hasInsurance = "No";
+  }
+
+  // insuranceCompany — extract company name after "insurance with"
+  const insuranceMatch = story.match(
+    /insurance\s+with\s+([A-Z][A-Za-z\s]+?)(?:\.|,|$)/i
   );
-  if (vehicleMatch) extracted.vehicle = vehicleMatch[1];
+  if (insuranceMatch) extracted.insuranceCompany = insuranceMatch[1].trim();
 
-  // Damage description (grab a short phrase around "damage" or "cracked")
-  const damageMatch = story.match(
-    /(?:damage[sd]?|cracked|broken|dented)[^.?,]*/i
-  );
-  if (damageMatch) extracted.damage = damageMatch[0].trim();
+  // ========== Vehicle Registration form fields ==========
 
-  // Date — simple ISO or "Monday / yesterday" style
-  const dateMatch = story.match(/\b(\d{4}-\d{2}-\d{2})\b/);
-  if (dateMatch) extracted.incidentDate = dateMatch[1];
+  // vehicleType — Car, Bike, Truck
+  if (lower.match(/\b(it's a|is a|registering a)\s+car\b/))
+    extracted.vehicleType = "Car";
+  else if (lower.match(/\b(it's a|is a|registering a)\s+bike\b/))
+    extracted.vehicleType = "Bike";
+  else if (lower.match(/\b(it's a|is a|registering a)\s+truck\b/))
+    extracted.vehicleType = "Truck";
 
-  // Location
-  const locationMatch = story.match(
-    /(?:on|at|near)\s+(highway\s+\w+|road\s+\w+|\w+\s+street|\w+\s+road)/i
-  );
-  if (locationMatch) extracted.location = locationMatch[1].trim();
-
-  // hasInsurance — assume true if "insurance" is mentioned
-  if (lower.includes("insurance")) extracted.hasInsurance = "Yes";
+  // vehicleNumber — match pattern like DL1234, MH5678
+  const vehicleNumMatch = story.match(/\b([A-Z]{2}\d{4})\b/);
+  if (vehicleNumMatch) extracted.vehicleNumber = vehicleNumMatch[1];
 
   return extracted;
 }
