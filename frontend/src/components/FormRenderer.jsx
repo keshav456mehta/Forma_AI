@@ -63,8 +63,14 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
 
       // Only set fields the extraction actually returned a value for —
       // leave everything else untouched for manual entry.
+      // shouldDirty: true is required so watch() picks up the programmatic
+      // change and triggers a re-render — without it, showIf conditions
+      // won't react to AI-populated values (Day 11 fix).
       if (extractedValue !== undefined && extractedValue !== null) {
-        setValue(fieldName, extractedValue, { shouldValidate: true });
+        setValue(fieldName, extractedValue, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
       }
     });
   };
