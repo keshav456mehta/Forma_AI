@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const formRoutes = require("./routes/formRoutes");
+require("./services/extractionService");
 
 dotenv.config();
 
