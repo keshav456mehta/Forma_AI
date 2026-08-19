@@ -1,5 +1,5 @@
 async function extractFromStory(story, fields = []) {
-  if (!story || typeof story !== "string") {
+  if (!story || typeof story !== "string" || !story.trim()) {
     throw new Error("Story must be a non-empty string");
   }
 
@@ -16,9 +16,7 @@ async function extractFromStory(story, fields = []) {
         ? field
         : field.name || field.label || field.id;
 
-    if (!fieldName) {
-      continue;
-    }
+    if (!fieldName) continue;
 
     const normalizedName = fieldName.toLowerCase();
 
@@ -43,12 +41,12 @@ async function extractFromStory(story, fields = []) {
       normalizedName === "vehicle" ||
       normalizedName === "vehiclemake"
     ) {
-      const vehicleMatch = story.match(
+      const match = story.match(
         /\b(Honda|Toyota|Ford|BMW|Audi|Tesla|Hyundai|Kia)\b/i
       );
 
-      if (vehicleMatch) {
-        result[fieldName] = vehicleMatch[1];
+      if (match) {
+        result[fieldName] = match[1];
       }
     }
 
@@ -71,10 +69,10 @@ async function extractFromStory(story, fields = []) {
       normalizedName === "location" ||
       normalizedName === "address"
     ) {
-      const locationMatch = story.match(/\bI-\d+\b/i);
+      const match = story.match(/\bI-\d+\b/i);
 
-      if (locationMatch) {
-        result[fieldName] = locationMatch[0].toUpperCase();
+      if (match) {
+        result[fieldName] = match[0].toUpperCase();
       }
     }
 
@@ -92,6 +90,27 @@ async function extractFromStory(story, fields = []) {
   return result;
 }
 
+
+// API-level extraction when MongoDB/form schema is unavailable.
+// This keeps the extraction endpoint usable for testing.
+async function extractFields(story) {
+  if (!story || typeof story !== "string" || !story.trim()) {
+    throw new Error("Story must be a non-empty string");
+  }
+
+  const fields = [
+    "incidentType",
+    "vehicle",
+    "damage",
+    "location",
+    "date",
+  ];
+
+  return extractFromStory(story, fields);
+}
+
+
 module.exports = {
   extractFromStory,
+  extractFields,
 };
