@@ -14,6 +14,7 @@ export default function TestExtractionPage() {
     { id: "6a828552980c388e1d07ee4c", title: "Basic Information" },
     { id: "6a828552980c388e1d07ee4d", title: "Insurance Claim" },
     { id: "6a828552980c388e1d07ee4e", title: "Vehicle Registration" },
+    { id: "6a8543a353b62191daabfcb8", title: "Vehicle Registration - 3-Level Branching" },
   ];
 
   return (

@@ -155,5 +155,19 @@ function buildMockResponse(story) {
   const vehicleNumMatch = story.match(/\b([A-Z]{2}\d{4})\b/);
   if (vehicleNumMatch) extracted.vehicleNumber = vehicleNumMatch[1];
 
+  // ========== 3-Level Branching form fields (Day 12) ==========
+
+  // vehicleCategory — Sedan, SUV, Hatchback (only relevant when vehicleType = Car)
+  if (lower.match(/\bcategory is sedan\b/))
+    extracted.vehicleCategory = "Sedan";
+  else if (lower.match(/\bcategory is suv\b/))
+    extracted.vehicleCategory = "SUV";
+  else if (lower.match(/\bcategory is hatchback\b/))
+    extracted.vehicleCategory = "Hatchback";
+
+  // vehicleModel — free text after "model is"
+  const modelMatch = story.match(/model is\s+([A-Za-z\s]+?)(?:\.|,|$)/i);
+  if (modelMatch) extracted.vehicleModel = modelMatch[1].trim();
+
   return extracted;
 }
