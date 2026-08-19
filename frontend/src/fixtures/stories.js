@@ -76,4 +76,40 @@ export const sampleStories = [
     },
     formTitle: "Basic Information",
   },
+  // Day 12: 3-level branching test stories
+  {
+    name: "3-Level - Sedan chain",
+    story: "Owner is Raj Patel. It's a Car. Category is Sedan. Model is Honda City. I confirm the details.",
+    expectedFields: {
+      ownerName: "Raj Patel",
+      vehicleType: "Car",
+      vehicleCategory: "Sedan",
+      vehicleModel: "Honda City",
+      terms: true,
+    },
+    formTitle: "Vehicle Registration - 3-Level Branching",
+  },
+  {
+    name: "3-Level - SUV chain",
+    story: "I'm Anita Desai. I'm registering a Car, category is SUV, model is Hyundai Creta. I confirm.",
+    expectedFields: {
+      ownerName: "Anita Desai",
+      vehicleType: "Car",
+      vehicleCategory: "SUV",
+      vehicleModel: "Hyundai Creta",
+      terms: true,
+    },
+    formTitle: "Vehicle Registration - 3-Level Branching",
+  },
+  {
+    name: "3-Level - Bike (chain breaks early)",
+    story: "Owner is Mohan Singh. It's a Bike. I confirm the vehicle details.",
+    expectedFields: {
+      ownerName: "Mohan Singh",
+      vehicleType: "Bike",
+      // vehicleCategory and vehicleModel should NOT be filled (showIf chain breaks)
+      terms: true,
+    },
+    formTitle: "Vehicle Registration - 3-Level Branching",
+  },
 ];
