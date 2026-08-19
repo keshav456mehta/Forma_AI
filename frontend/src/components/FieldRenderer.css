@@ -1,0 +1,14 @@
+.field-input.field-flagged {
+  border: 2px solid #e0a800; /* amber for missed */
+  background-color: #fff9e6;
+}
+
+.field-input.field-uncertain {
+  border: 2px solid #d97706; /* slightly different tone for uncertain vs missed */
+}
+
+.field-flag-hint {
+  font-size: 0.8rem;
+  color: #b45309;
+  margin-top: 2px;
+}

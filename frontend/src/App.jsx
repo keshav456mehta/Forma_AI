@@ -1,7 +1,13 @@
-import TestExtractionPage from "./pages/TestExtractionPage";
+import MagicInput from "./components/MagicInput";
 
 function App() {
-  return <TestExtractionPage />;
+  return (
+    <div>
+      <MagicInput
+        onSubmit={(story) => console.log("Story submitted:", story)}
+      />
+    </div>
+  );
 }
 
 export default App;
