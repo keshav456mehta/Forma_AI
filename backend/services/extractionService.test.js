@@ -15,7 +15,7 @@ describe("extractFromStory", () => {
     jest.clearAllMocks();
   });
 
-  test("uses Rakesh's exact field names and worked example in the prompt", async () => {
+  test("binds the prompt and response to the supplied form schema", async () => {
     process.env.OPENAI_API_KEY = "test-key";
     const create = jest.fn().mockResolvedValue({
       choices: [{ message: { content: JSON.stringify({
@@ -34,7 +34,45 @@ describe("extractFromStory", () => {
     });
 
     expect(create.mock.calls[0][0].messages[0].content).toContain("incidentType");
-    expect(create.mock.calls[0][0].messages[0].content).toContain("windshield shattered");
+    expect(create.mock.calls[0][0].messages[0].content).toContain("Incident type");
+  });
+
+  test("preserves all levels of a conditional form schema", async () => {
+    const nestedFields = [
+      { name: "ownerName", label: "Owner Name", type: "text" },
+      { name: "vehicleType", label: "Vehicle Type", type: "select", options: [{ value: "Car" }, { value: "Bike" }] },
+      { name: "vehicleCategory", label: "Vehicle Category", type: "select", showIf: { fieldId: "vehicleType", equals: "Car" } },
+      { name: "vehicleModel", label: "Vehicle Model", type: "text", showIf: { fieldId: "vehicleCategory", equals: "Sedan" } },
+      { name: "terms", label: "Confirm details", type: "checkbox" },
+    ];
+    process.env.OPENAI_API_KEY = "test-key";
+    const create = jest.fn().mockResolvedValue({
+      choices: [{ message: { content: JSON.stringify({
+        ownerName: "Raj Patel",
+        vehicleType: "Car",
+        vehicleCategory: "Sedan",
+        vehicleModel: "Honda City",
+        terms: true,
+        unexpected: "ignored",
+      }) } }],
+    });
+    OpenAI.mockImplementation(() => ({ chat: { completions: { create } } }));
+
+    await expect(extractFromStory(
+      "Owner is Raj Patel. It's a Car. Category is Sedan. Model is Honda City. I confirm.",
+      nestedFields
+    )).resolves.toEqual({
+      ownerName: "Raj Patel",
+      vehicleType: "Car",
+      vehicleCategory: "Sedan",
+      vehicleModel: "Honda City",
+      terms: true,
+    });
+
+    const prompt = create.mock.calls[0][0].messages[0].content;
+    expect(prompt).toContain("vehicleCategory");
+    expect(prompt).toContain("vehicleModel");
+    expect(prompt).toContain("vehicleType");
   });
 
   test("degrades gracefully for an incomplete story", async () => {

@@ -1,6 +1,5 @@
 const OpenAI = require("openai");
 
-const RAKESH_FIELDS = ["incidentType", "vehicle", "damage"];
 const DEFAULT_TIMEOUT_MS = 15_000;
 
 class ExtractionServiceError extends Error {
@@ -11,26 +10,54 @@ class ExtractionServiceError extends Error {
   }
 }
 
-function emptyExtraction() {
-  return { incidentType: "", vehicle: "", damage: "" };
+function schemaFields(fields) {
+  if (!Array.isArray(fields)) return [];
+
+  return fields
+    .filter((field) => field && typeof field.name === "string" && field.name.trim())
+    .map((field) => ({
+      name: field.name.trim(),
+      label: field.label || field.name.trim(),
+      type: field.type || "text",
+      options: Array.isArray(field.options)
+        ? field.options.map((option) => option.value ?? option.label).filter(Boolean)
+        : [],
+      showIf: field.showIf?.fieldId
+        ? { fieldId: field.showIf.fieldId, equals: field.showIf.equals }
+        : undefined,
+    }));
 }
 
-function cleanExtraction(value) {
+function emptyExtraction(fields) {
+  return Object.fromEntries(
+    schemaFields(fields).map((field) => [
+      field.name,
+      field.type === "checkbox" ? false : "",
+    ])
+  );
+}
+
+function cleanExtraction(value, fields) {
   const source = value && typeof value === "object" && !Array.isArray(value)
     ? value
     : {};
-  const result = emptyExtraction();
+  const result = emptyExtraction(fields);
 
-  for (const name of RAKESH_FIELDS) {
-    if (typeof source[name] === "string") {
-      result[name] = source[name].trim();
+  for (const field of schemaFields(fields)) {
+    const valueForField = source[field.name];
+    if (typeof valueForField === "string") {
+      result[field.name] = valueForField.trim();
+    } else if (field.type === "checkbox" && typeof valueForField === "boolean") {
+      result[field.name] = valueForField;
     }
   }
 
   return result;
 }
 
-async function requestModelExtraction(client, story, strict) {
+async function requestModelExtraction(client, story, fields, strict) {
+  const formFields = schemaFields(fields);
+  const fieldInstructions = JSON.stringify(formFields);
   const completion = await client.chat.completions.create({
     model: process.env.OPENAI_EXTRACTION_MODEL || "gpt-4o-mini",
     response_format: { type: "json_object" },
@@ -39,8 +66,8 @@ async function requestModelExtraction(client, story, strict) {
       {
         role: "system",
         content: strict
-          ? "Return valid JSON only. No markdown, code fences, prose, or extra keys. Use exactly incidentType, vehicle, and damage. Return an empty string when uncertain."
-          : "Extract an insurance incident into exactly this JSON shape: {\"incidentType\": \"\", \"vehicle\": \"\", \"damage\": \"\"}. Never guess; use an empty string when a value is not confidently stated. Example: for 'I hit a deer on I-95 yesterday in my Honda, and the windshield shattered.', return {\"incidentType\": \"animal_collision\", \"vehicle\": \"Honda\", \"damage\": \"windshield\"}. Return JSON only, with no markdown or prose.",
+          ? `Return valid JSON only. No markdown, code fences, prose, or extra keys. Use exactly the field names in this schema: ${fieldInstructions}. Return an empty string (or false for checkboxes) when uncertain.`
+          : `Extract the story into the supplied form schema. Return a flat JSON object with exactly the schema field names. Include conditional fields too; use each field's showIf rule to understand its relationship to the controlling field. Never guess. Return an empty string for unknown text/select fields and false for unknown checkboxes. For select fields, use an exact option value when options are supplied. Schema: ${fieldInstructions}. Return JSON only, with no markdown or prose.`,
       },
       {
         role: "user",
@@ -69,16 +96,15 @@ function providerErrorKind(error) {
 }
 
 /**
- * Extract Rakesh's insurance schema from a story. The fields argument remains
- * accepted for route compatibility, but the response is intentionally fixed.
+ * Extract a form-schema-shaped response from a free-form story.
  */
-async function extractFromStory(text, _fields) {
+async function extractFromStory(text, fields) {
   if (typeof text !== "string" || !text.trim()) {
     throw new Error("A non-empty story is required for extraction");
   }
 
   if (!process.env.OPENAI_API_KEY) {
-    return emptyExtraction();
+    return emptyExtraction(fields);
   }
 
   const client = new OpenAI({
@@ -86,7 +112,7 @@ async function extractFromStory(text, _fields) {
     timeout: Number(process.env.OPENAI_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
   });
   try {
-    return cleanExtraction(await requestModelExtraction(client, text, false));
+    return cleanExtraction(await requestModelExtraction(client, text, fields, false), fields);
   } catch (error) {
     // Prompts and provider output are never sent to clients.
     console.error("AI extraction attempt failed:", error.message);
@@ -96,14 +122,14 @@ async function extractFromStory(text, _fields) {
     }
 
     try {
-      return cleanExtraction(await requestModelExtraction(client, text, true));
+      return cleanExtraction(await requestModelExtraction(client, text, fields, true), fields);
     } catch (retryError) {
       console.error("AI extraction retry failed; using empty fallback:", retryError.message);
 
       if (isProviderFailure(retryError)) {
         throw new ExtractionServiceError(providerErrorKind(retryError));
       }
-      return emptyExtraction();
+      return emptyExtraction(fields);
     }
   }
 }
