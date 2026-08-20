@@ -58,6 +58,11 @@ const fieldSchema = new mongoose.Schema(
   }
 },
 
+aliases: {
+  type: [String],
+  default: [],
+},
+
 validationRegex: {
   type: String
 }}

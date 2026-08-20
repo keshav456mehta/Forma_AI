@@ -48,3 +48,93 @@ Each field contains:
     }
   ]
 }
+# Forma AI — LLM Extraction Output Schema
+
+## Day 8 — LLM Extraction Schema
+
+### Purpose
+
+Forma AI will allow a user to describe an incident using
+natural language.
+
+The LLM will extract useful information from the user's story
+and return it in a strict JSON format.
+
+The extracted JSON will then be mapped to the existing
+dynamic form fields.
+
+---
+
+## 1. Entities to Extract
+
+The first version of Forma AI will extract these entities:
+
+- incidentType
+- vehicle
+- damage
+- location
+- date
+
+### Entity Description
+
+| Entity | Description |
+|---|---|
+| incidentType | Type of incident reported by the user |
+| vehicle | Vehicle involved in the incident |
+| damage | Damage described by the user |
+| location | Location where the incident happened |
+| date | Date or relative date of the incident |
+
+---
+
+## 2. LLM Output Format
+
+The LLM must return a JSON object.
+
+The output should follow this structure:
+
+```json
+{
+  "incidentType": "animal_collision",
+  "vehicle": "Honda",
+  "damage": "windshield",
+  "location": "I-95",
+  "date": "yesterday"
+}
+
+## Day 9 — LLM Extraction to Form Field Mapping
+
+### Purpose
+
+This mapping defines how LLM extraction entities map
+to the existing dynamic form field names.
+
+| LLM Entity | Form Field Name | Purpose |
+|---|---|---|
+| incidentType | incidentType | Type of incident |
+| vehicle | vehicle | Vehicle involved |
+| damage | damage | Damage reported |
+
+### Mapping Rules
+
+1. LLM extraction keys must use the agreed entity names.
+2. Form field names must remain consistent with the mapping.
+3. Any naming mismatch must be resolved before integration.
+4. The mapping should be directly usable by the frontend
+   when populating form values.
+
+### Example
+
+LLM Output:
+
+{
+  "incidentType": "animal_collision",
+  "vehicle": "Honda",
+  "damage": "windshield"
+}
+
+Mapping:
+
+incidentType → incidentType
+vehicle → vehicle
+damage → damage
