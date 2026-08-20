@@ -3,3 +3,4 @@ frontend/.env
 *.env.local
 2004@123
 2004@123.pub
+node_modules/

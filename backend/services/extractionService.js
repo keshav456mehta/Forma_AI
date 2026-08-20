@@ -114,7 +114,6 @@ async function extractFromStory(text, fields) {
   try {
     return cleanExtraction(await requestModelExtraction(client, text, fields, false), fields);
   } catch (error) {
-    // Prompts and provider output are never sent to clients.
     console.error("AI extraction attempt failed:", error.message);
 
     if (isProviderFailure(error)) {
