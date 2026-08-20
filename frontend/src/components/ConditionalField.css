@@ -1,0 +1,5 @@
+/* ConditionalField.css */
+.conditional-field {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.25s ease;
+}
