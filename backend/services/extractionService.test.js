@@ -1,7 +1,7 @@
 jest.mock("openai", () => jest.fn());
 
 const OpenAI = require("openai");
-const { extractFromStory } = require("./extractionService");
+const { extractFromStory, ExtractionServiceError } = require("./extractionService");
 
 describe("extractFromStory", () => {
   const fields = [
@@ -70,6 +70,45 @@ describe("extractFromStory", () => {
       });
 
     expect(create).toHaveBeenCalledTimes(2);
+    errorSpy.mockRestore();
+  });
+
+  test("uses a 15-second timeout and reports provider timeouts safely", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    const timeoutError = Object.assign(new Error("timed out"), {
+      code: "ETIMEDOUT",
+      name: "APIConnectionTimeoutError",
+    });
+    const create = jest.fn().mockRejectedValue(timeoutError);
+    OpenAI.mockImplementation(() => ({ chat: { completions: { create } } }));
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(extractFromStory("A story", fields)).rejects.toEqual(
+      expect.objectContaining({
+        name: "ExtractionServiceError",
+        kind: "timeout",
+        message: "Extraction service unavailable, please try again",
+      })
+    );
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(create.mock.calls[0][0].timeout).toBe(15000);
+    errorSpy.mockRestore();
+  });
+
+  test("reports rate limits as a typed provider failure", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    const rateLimitError = Object.assign(new Error("too many requests"), {
+      status: 429,
+      name: "RateLimitError",
+    });
+    OpenAI.mockImplementation(() => ({
+      chat: { completions: { create: jest.fn().mockRejectedValue(rateLimitError) } },
+    }));
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(extractFromStory("A story", fields)).rejects.toBeInstanceOf(
+      ExtractionServiceError
+    );
     errorSpy.mockRestore();
   });
 });

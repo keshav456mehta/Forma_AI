@@ -1,6 +1,15 @@
 const OpenAI = require("openai");
 
 const RAKESH_FIELDS = ["incidentType", "vehicle", "damage"];
+const DEFAULT_TIMEOUT_MS = 15_000;
+
+class ExtractionServiceError extends Error {
+  constructor(kind) {
+    super("Extraction service unavailable, please try again");
+    this.name = "ExtractionServiceError";
+    this.kind = kind;
+  }
+}
 
 function emptyExtraction() {
   return { incidentType: "", vehicle: "", damage: "" };
@@ -25,6 +34,7 @@ async function requestModelExtraction(client, story, strict) {
   const completion = await client.chat.completions.create({
     model: process.env.OPENAI_EXTRACTION_MODEL || "gpt-4o-mini",
     response_format: { type: "json_object" },
+    timeout: Number(process.env.OPENAI_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
     messages: [
       {
         role: "system",
@@ -47,6 +57,17 @@ async function requestModelExtraction(client, story, strict) {
   return JSON.parse(content);
 }
 
+function isProviderFailure(error) {
+  return !(error instanceof SyntaxError) &&
+    (error?.status === 429 || error?.status >= 500 || error?.code || error?.name);
+}
+
+function providerErrorKind(error) {
+  if (error?.status === 429 || error?.name === "RateLimitError") return "rate_limit";
+  if (error?.name === "APIConnectionTimeoutError" || error?.code === "ETIMEDOUT") return "timeout";
+  return "unavailable";
+}
+
 /**
  * Extract Rakesh's insurance schema from a story. The fields argument remains
  * accepted for route compatibility, but the response is intentionally fixed.
@@ -60,20 +81,31 @@ async function extractFromStory(text, _fields) {
     return emptyExtraction();
   }
 
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    timeout: Number(process.env.OPENAI_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
+  });
   try {
     return cleanExtraction(await requestModelExtraction(client, text, false));
   } catch (error) {
     // Prompts and provider output are never sent to clients.
     console.error("AI extraction attempt failed:", error.message);
 
+    if (isProviderFailure(error)) {
+      throw new ExtractionServiceError(providerErrorKind(error));
+    }
+
     try {
       return cleanExtraction(await requestModelExtraction(client, text, true));
     } catch (retryError) {
       console.error("AI extraction retry failed; using empty fallback:", retryError.message);
+
+      if (isProviderFailure(retryError)) {
+        throw new ExtractionServiceError(providerErrorKind(retryError));
+      }
       return emptyExtraction();
     }
   }
 }
 
-module.exports = { extractFromStory };
+module.exports = { extractFromStory, ExtractionServiceError };
