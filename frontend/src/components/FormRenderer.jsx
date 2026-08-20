@@ -5,6 +5,7 @@ import axios from "axios";
 import TextField from "./TextField";
 import Checkbox from "./Checkbox";
 import Dropdown from "./DropDown";
+import MagicInput from "./MagicInput";
 
 // Returns true if a field should be visible, based on its showIf rule
 // (e.g. only show "Insurance Company" if "hasInsurance" === "Yes").
@@ -62,8 +63,14 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
 
       // Only set fields the extraction actually returned a value for —
       // leave everything else untouched for manual entry.
+      // shouldDirty: true is required so watch() picks up the programmatic
+      // change and triggers a re-render — without it, showIf conditions
+      // won't react to AI-populated values (Day 11 fix).
       if (extractedValue !== undefined && extractedValue !== null) {
-        setValue(fieldName, extractedValue, { shouldValidate: true });
+        setValue(fieldName, extractedValue, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
       }
     });
   };
@@ -108,6 +115,10 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
       {schema.description && (
         <p className="text-gray-600 mb-6">{schema.description}</p>
       )}
+
+      {/* Day 9: Magic Input — sends story text to extraction API,
+          then calls applyExtractedData() to pre-fill matching fields */}
+      <MagicInput formId={formId} onExtracted={applyExtractedData} />
 
       {schema.fields.map((field) => {
         // Skip fields whose showIf condition isn't currently satisfied.
