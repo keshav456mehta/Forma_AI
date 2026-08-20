@@ -1,44 +1,54 @@
 import { useState } from "react";
-import "./MagicInput.css";
+import axios from "axios";
 
-export default function MagicInput({ onSubmit }) {
+export default function MagicInput({ formId, onExtracted }) {
   const [story, setStory] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState("");
 
-  const handleSubmit = async () => {
-    setIsLoading(true);
+  const handleExtract = async () => {
+    if (!story.trim()) return;
 
+    setExtracting(true);
+    setExtractError("");
     try {
-      await onSubmit?.(story);
+      const response = await axios.post(
+        `http://localhost:5000/api/forms/${formId}/extract`,
+        { story }
+      );
+      onExtracted?.(response.data);
+    } catch (error) {
+      setExtractError(
+        error.response?.data?.error ||
+          "Extraction service unavailable, please try again"
+      );
     } finally {
-      setIsLoading(false);
+      setExtracting(false);
     }
   };
 
   return (
-    <div className="magic-input">
-      {isLoading ? (
-        <div className="magic-input__skeleton" aria-busy="true">
-          <div className="skeleton-line skeleton-line--wide" />
-          <div className="skeleton-line skeleton-line--medium" />
-          <div className="skeleton-line skeleton-line--short" />
-        </div>
-      ) : (
-        <textarea
-          className="magic-input__textarea"
-          placeholder="e.g. My name is Priya, I'm 24, and I live in Bangalore..."
-          value={story}
-          onChange={(e) => setStory(e.target.value)}
-          disabled={isLoading}
-        />
-      )}
-
+    <div className="mb-6 p-4 border border-blue-200 rounded-lg bg-blue-50">
+      <label htmlFor="magic-input" className="block text-sm font-semibold text-blue-800 mb-1">
+        Magic Input
+      </label>
+      <textarea
+        id="magic-input"
+        value={story}
+        onChange={(event) => setStory(event.target.value)}
+        disabled={extracting}
+        rows={3}
+        placeholder="Describe your incident and we’ll fill the form for you."
+        className="w-full px-3 py-2 border border-blue-300 rounded-md text-sm resize-none"
+      />
+      {extractError && <p role="alert" className="text-xs text-red-600 mt-1">{extractError}</p>}
       <button
-        className="magic-input__submit"
-        onClick={handleSubmit}
-        disabled={isLoading || !story.trim()}
+        type="button"
+        onClick={handleExtract}
+        disabled={extracting || !story.trim()}
+        className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-md disabled:opacity-50"
       >
-        {isLoading ? "Processing..." : "Submit"}
+        {extracting ? "Extracting…" : "Auto-fill from story"}
       </button>
     </div>
   );

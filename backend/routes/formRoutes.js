@@ -2,7 +2,10 @@ const express = require("express");
 const mongoose = require("mongoose");
 const { getFormById, submitForm } = require("../controllers/formController");
 const Form = require("../models/Form");
-const { extractFromStory } = require("../services/extractionService");
+const {
+  extractFromStory,
+  ExtractionServiceError,
+} = require("../services/extractionService");
 
 const router = express.Router();
 
@@ -40,8 +43,15 @@ router.post("/:id/extract", async (req, res) => {
   } catch (error) {
     // Do not expose provider details, raw prompts, or model output to clients.
     console.error("Form extraction failed:", error.message);
+
+    if (error instanceof ExtractionServiceError) {
+      return res.status(error.kind === "rate_limit" ? 429 : 503).json({
+        error: "Extraction service unavailable, please try again",
+      });
+    }
+
     return res.status(500).json({
-      error: "Failed to extract form data",
+      error: "Extraction service unavailable, please try again",
     });
   }
 });
