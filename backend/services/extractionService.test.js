@@ -1,7 +1,8 @@
 jest.mock("openai", () => jest.fn());
 
 const OpenAI = require("openai");
-const { extractFromStoryAI: extractFromStory } = require("./extractionService");
+const { extractFromStory, ExtractionServiceError } = require("./extractionService");
+
 describe("extractFromStory", () => {
   const fields = [
     { name: "incidentType", label: "Incident type", type: "text" },
@@ -14,7 +15,7 @@ describe("extractFromStory", () => {
     jest.clearAllMocks();
   });
 
-  test("uses Rakesh's exact field names and worked example in the prompt", async () => {
+  test("binds the prompt and response to the supplied form schema", async () => {
     process.env.OPENAI_API_KEY = "test-key";
     const create = jest.fn().mockResolvedValue({
       choices: [{ message: { content: JSON.stringify({
@@ -33,7 +34,45 @@ describe("extractFromStory", () => {
     });
 
     expect(create.mock.calls[0][0].messages[0].content).toContain("incidentType");
-    expect(create.mock.calls[0][0].messages[0].content).toContain("windshield shattered");
+    expect(create.mock.calls[0][0].messages[0].content).toContain("Incident type");
+  });
+
+  test("preserves all levels of a conditional form schema", async () => {
+    const nestedFields = [
+      { name: "ownerName", label: "Owner Name", type: "text" },
+      { name: "vehicleType", label: "Vehicle Type", type: "select", options: [{ value: "Car" }, { value: "Bike" }] },
+      { name: "vehicleCategory", label: "Vehicle Category", type: "select", showIf: { fieldId: "vehicleType", equals: "Car" } },
+      { name: "vehicleModel", label: "Vehicle Model", type: "text", showIf: { fieldId: "vehicleCategory", equals: "Sedan" } },
+      { name: "terms", label: "Confirm details", type: "checkbox" },
+    ];
+    process.env.OPENAI_API_KEY = "test-key";
+    const create = jest.fn().mockResolvedValue({
+      choices: [{ message: { content: JSON.stringify({
+        ownerName: "Raj Patel",
+        vehicleType: "Car",
+        vehicleCategory: "Sedan",
+        vehicleModel: "Honda City",
+        terms: true,
+        unexpected: "ignored",
+      }) } }],
+    });
+    OpenAI.mockImplementation(() => ({ chat: { completions: { create } } }));
+
+    await expect(extractFromStory(
+      "Owner is Raj Patel. It's a Car. Category is Sedan. Model is Honda City. I confirm.",
+      nestedFields
+    )).resolves.toEqual({
+      ownerName: "Raj Patel",
+      vehicleType: "Car",
+      vehicleCategory: "Sedan",
+      vehicleModel: "Honda City",
+      terms: true,
+    });
+
+    const prompt = create.mock.calls[0][0].messages[0].content;
+    expect(prompt).toContain("vehicleCategory");
+    expect(prompt).toContain("vehicleModel");
+    expect(prompt).toContain("vehicleType");
   });
 
   test("degrades gracefully for an incomplete story", async () => {
@@ -69,6 +108,45 @@ describe("extractFromStory", () => {
       });
 
     expect(create).toHaveBeenCalledTimes(2);
+    errorSpy.mockRestore();
+  });
+
+  test("uses a 15-second timeout and reports provider timeouts safely", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    const timeoutError = Object.assign(new Error("timed out"), {
+      code: "ETIMEDOUT",
+      name: "APIConnectionTimeoutError",
+    });
+    const create = jest.fn().mockRejectedValue(timeoutError);
+    OpenAI.mockImplementation(() => ({ chat: { completions: { create } } }));
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(extractFromStory("A story", fields)).rejects.toEqual(
+      expect.objectContaining({
+        name: "ExtractionServiceError",
+        kind: "timeout",
+        message: "Extraction service unavailable, please try again",
+      })
+    );
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(create.mock.calls[0][0].timeout).toBe(15000);
+    errorSpy.mockRestore();
+  });
+
+  test("reports rate limits as a typed provider failure", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    const rateLimitError = Object.assign(new Error("too many requests"), {
+      status: 429,
+      name: "RateLimitError",
+    });
+    OpenAI.mockImplementation(() => ({
+      chat: { completions: { create: jest.fn().mockRejectedValue(rateLimitError) } },
+    }));
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(extractFromStory("A story", fields)).rejects.toBeInstanceOf(
+      ExtractionServiceError
+    );
     errorSpy.mockRestore();
   });
 });
