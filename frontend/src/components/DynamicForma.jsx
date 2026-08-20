@@ -182,7 +182,7 @@ function DynamicForm({ formId }) {
           Submit
         </button>
       </form>
-    </div>........
+    </div>
   );
 }
 
