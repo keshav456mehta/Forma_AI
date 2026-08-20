@@ -21,23 +21,28 @@ app.get("/", (_req, res) => {
 app.use("/api/forms", formRoutes);
 
 async function startServer() {
-  try {
-    if (!MONGODB_URI) {
-      console.warn(
-        "MongoDB URI missing. Add MONGODB_URI or MONGO_URI to backend/.env."
-      );
-    } else {
+  if (!MONGODB_URI) {
+    console.warn(
+      "MongoDB URI missing. Starting server without MongoDB."
+    );
+  } else {
+    try {
       await mongoose.connect(MONGODB_URI);
       console.log("MongoDB connected");
+    } catch (error) {
+      console.warn(
+        "MongoDB connection failed:",
+        error.message
+      );
+      console.warn(
+        "Starting server without MongoDB. Extraction API is still available."
+      );
     }
-
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error("MongoDB connection failed:", error.message);
-    process.exit(1);
   }
+
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
 }
 
 startServer();
