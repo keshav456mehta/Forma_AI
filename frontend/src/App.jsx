@@ -1,13 +1,12 @@
-import MagicInput from "./components/MagicInput";
+﻿import FormRenderer from "./components/FormRenderer";
+import TestExtractionPage from "./pages/TestExtractionPage";
 
 function App() {
-  return (
-    <div>
-      <MagicInput
-        onSubmit={(story) => console.log("Story submitted:", story)}
-      />
-    </div>
-  );
+  const showTestPage =
+    import.meta.env.DEV &&
+    new URLSearchParams(window.location.search).has("test");
+
+  return showTestPage ? <TestExtractionPage /> : <FormRenderer />;
 }
 
 export default App;
