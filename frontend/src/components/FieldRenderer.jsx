@@ -17,9 +17,11 @@ function FieldRenderer({ field, value, extractionStatus, onChange }) {
       />
       {isFlagged && stillEmpty && (
         <span className="field-flag-hint">
-          {extractionStatus === 'missed' ? 'Please fill this in' : 'AI wasn't sure — please check'}
+          {extractionStatus === 'missed' ? 'Please fill this in' : "AI wasn't sure — please check"}
         </span>
       )}
     </div>
   );
 }
+
+export default FieldRenderer;

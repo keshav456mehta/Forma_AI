@@ -211,6 +211,4 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
   );
 }
 
-export { shouldShowField};
-
 export default FormRenderer;
