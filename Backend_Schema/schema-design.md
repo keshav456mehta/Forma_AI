@@ -144,59 +144,6 @@ damage → damage
 
 ### Purpose
 
-This section defines the finalized extraction schema for
-Forma AI Week 2.
-
-The extraction schema describes:
-
-- entities
-- aliases
-- form-field mapping
-- expected output format
-- example input stories
-- expected extracted JSON
-
----
-
-## Final Entities
-
-The current extraction entities are:
-
-- incidentType
-- vehicle
-- damage
-
----
-
-## Final Extraction-to-Field Mapping
-
-| Extraction Entity | Form Field | Example |
-|---|---|---|
-| incidentType | incidentType | animal_collision |
-| vehicle | vehicle | Honda |
-| damage | damage | windshield |
-
----
-
-## Aliases
-
-Aliases allow natural-language variations to resolve to
-the same form field.
-
-### vehicle
-
-```json
-[
-  "car",
-  "vehicle",
-  "automobile",
-  "honda"
-]
-
-## Day 11 — Final LLM Extraction Schema
-
-### Purpose
-
 This section defines the finalized LLM extraction schema
 for Forma AI Week 2.
 
