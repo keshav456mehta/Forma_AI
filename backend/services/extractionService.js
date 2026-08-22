@@ -58,6 +58,8 @@ function cleanExtraction(value, fields) {
 async function requestModelExtraction(client, story, fields, strict) {
   const formFields = schemaFields(fields);
   const fieldInstructions = JSON.stringify(formFields);
+
+  // Give the model the live form schema so its JSON can be applied directly.
   const completion = await client.chat.completions.create({
     model: process.env.OPENAI_EXTRACTION_MODEL || "gpt-4o-mini",
     response_format: { type: "json_object" },
@@ -114,8 +116,7 @@ async function extractFromStory(text, fields) {
   try {
     return cleanExtraction(await requestModelExtraction(client, text, fields, false), fields);
   } catch (error) {
-    console.error("AI extraction attempt failed:", error.message);
-
+    // Provider failures are surfaced to the route; malformed output gets one stricter retry.
     if (isProviderFailure(error)) {
       throw new ExtractionServiceError(providerErrorKind(error));
     }
@@ -123,11 +124,10 @@ async function extractFromStory(text, fields) {
     try {
       return cleanExtraction(await requestModelExtraction(client, text, fields, true), fields);
     } catch (retryError) {
-      console.error("AI extraction retry failed; using empty fallback:", retryError.message);
-
       if (isProviderFailure(retryError)) {
         throw new ExtractionServiceError(providerErrorKind(retryError));
       }
+      // Invalid model output must not break form completion; return schema-safe defaults.
       return emptyExtraction(fields);
     }
   }
