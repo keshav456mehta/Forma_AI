@@ -42,8 +42,6 @@ router.post("/:id/extract", async (req, res) => {
     return res.status(200).json(extracted);
   } catch (error) {
     // Do not expose provider details, raw prompts, or model output to clients.
-    console.error("Form extraction failed:", error.message);
-
     if (error instanceof ExtractionServiceError) {
       return res.status(error.kind === "rate_limit" ? 429 : 503).json({
         error: "Extraction service unavailable, please try again",
