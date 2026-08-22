@@ -46,14 +46,14 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
       });
   }, [formId]);
 
-  // Day 8 stub: accepts the AI-extraction response and pre-fills matching
-  // form fields via react-hook-form's setValue().
+  // Day 15: applies the LIVE extraction response (schema-shaped flat JSON)
+  // from POST /api/forms/:id/extract via react-hook-form's setValue().
   //
-  // ASSUMED SHAPE (not yet confirmed with Member 3 / backend): a flat JSON
-  // object whose keys match schema field names exactly, e.g.
-  //   { incidentType: "animal_collision", vehicle: "Honda", damage: "windshield" }
-  // Once the real /api/forms/:id/extract endpoint exists (Day 9), confirm
-  // this shape matches its actual response and adjust if it doesn't.
+  // Live response shape (extractionService.cleanExtraction): an object with
+  // EVERY schema field name present — "" for text/select fields the AI
+  // couldn't extract, false for unknown checkboxes. Because misses come back
+  // as "" (not undefined), we skip empty/false values so a re-extraction
+  // never wipes values the user already typed manually.
   const applyExtractedData = (extractedData) => {
     if (!extractedData || !schema?.fields) return;
 
@@ -61,12 +61,19 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
       const fieldName = field.name || field.id;
       const extractedValue = extractedData[fieldName];
 
-      // Only set fields the extraction actually returned a value for —
-      // leave everything else untouched for manual entry.
+      // Only set fields the AI actually extracted a value for —
+      // empty string = missed, false = unknown checkbox. Both are left
+      // untouched for manual entry (and Praveen's missed-field highlight).
+      const isMissed =
+        extractedValue === undefined ||
+        extractedValue === null ||
+        extractedValue === "" ||
+        extractedValue === false;
+
       // shouldDirty: true is required so watch() picks up the programmatic
       // change and triggers a re-render — without it, showIf conditions
       // won't react to AI-populated values (Day 11 fix).
-      if (extractedValue !== undefined && extractedValue !== null) {
+      if (!isMissed) {
         setValue(fieldName, extractedValue, {
           shouldValidate: true,
           shouldDirty: true,

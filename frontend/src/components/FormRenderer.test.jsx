@@ -173,4 +173,49 @@ describe("FormRenderer", () => {
 
     expect(input).toHaveValue("Keshav Mehta");
   });
+
+  // Day 15: the live extraction service returns EVERY schema field in its
+  // response — "" for text/select it couldn't extract. A re-extraction must
+  // never wipe values the user already typed manually.
+  it("keeps manually-entered values when a re-extraction misses those fields", async () => {
+    axios.get.mockResolvedValue({
+      data: {
+        title: "Basic Form",
+        fields: [
+          { name: "fullName", label: "Full Name", type: "text" },
+          { name: "city", label: "City", type: "text" },
+        ],
+      },
+    });
+
+    render(<FormRenderer formId="form-id" />);
+    await screen.findByText("Basic Form");
+
+    // First extraction fills only fullName; city comes back "" (missed)
+    axios.post.mockResolvedValueOnce({ data: { fullName: "Rajesh Kumar", city: "" } });
+    await act(async () => {
+      fireEvent.change(document.getElementById("magic-input"), {
+        target: { value: "My name is Rajesh Kumar." },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /auto-fill/i }));
+    });
+
+    // User manually fills the field the AI missed
+    fireEvent.change(await screen.findByLabelText("City"), {
+      target: { value: "Mumbai" },
+    });
+
+    // Second extraction misses BOTH fields ("") — nothing already on screen
+    // may be wiped
+    axios.post.mockResolvedValueOnce({ data: { fullName: "", city: "" } });
+    await act(async () => {
+      fireEvent.change(document.getElementById("magic-input"), {
+        target: { value: "something unrelated happened." },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /auto-fill/i }));
+    });
+
+    expect(screen.getByLabelText("City")).toHaveValue("Mumbai");
+    expect(screen.getByLabelText("Full Name")).toHaveValue("Rajesh Kumar");
+  });
 });
