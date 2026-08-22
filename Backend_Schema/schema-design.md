@@ -195,3 +195,49 @@ different natural-language expressions for the same field.
   "automobile",
   "honda"
 ]
+
+
+
+
+```md
+---
+
+## Day 15 — Live Extraction Schema Review
+
+### Purpose
+
+The finalized extraction schema was reviewed against real
+(non-mock) extraction responses.
+
+### Live Extraction Response Alignment
+
+The live extraction response should use the same field names
+defined in the finalized extraction-to-form mapping.
+
+| Live Extraction Key | Form Field Name | Type |
+|---|---|---|
+| incidentType | incidentType | string |
+| vehicle | vehicle | string |
+| damage | damage | string |
+
+### Live Extraction Reliability
+
+Based on live extraction testing:
+
+- incidentType: review for consistent classification.
+- vehicle: generally reliable when explicitly mentioned.
+- damage: review for consistent damage descriptions.
+- Missing information should not be guessed by the LLM.
+
+### Schema Review Findings
+
+- Extraction keys must match the finalized form field names.
+- Field types must remain consistent with the live response.
+- Alias-based matching should support natural-language variations.
+- Any unreliable fields should be shared with Member 3 for prompt tuning.
+
+### Integration Notes
+
+- Share the live extraction findings with Member 3.
+- Share the finalized extraction-to-form mapping with Member 1.
+- Frontend wiring should consume the agreed extraction keys directly.
