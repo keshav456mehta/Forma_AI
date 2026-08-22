@@ -1,13 +1,30 @@
-# Forma AI — Week 1 Test Log
+# Forma AI - Week 2 Test Log
 
-## Day 7 Test Verification
+## Day 14 - Final Test Suite & Documentation
 
-Date: 2026-08-15  
-Branch: `V_Divyesh`
+**Branch:** V_Divyesh
 
-## Backend Tests
+### Test Summary
 
-Command:
+| Test Area | Status |
+|-----------|--------|
+| Schema Validation | PASS |
+| Submission Validation | PASS |
+| Conditional Field Validation | PASS |
+| Story Fixtures | PASS |
+| Extraction Service | PASS |
+| Extraction API | PASS |
 
-```text
-npm --prefix backend test
+### Week 2 Coverage
+
+- User story fixtures created and verified
+- Extraction service implemented and tested
+- Extraction API tested with valid story input
+- Validation tests updated for conditional fields
+- Documentation reviewed and cleaned
+
+### Mid Review Status
+
+- Week 1 tests completed
+- Week 2 tests completed
+- Test suite ready for integration review
