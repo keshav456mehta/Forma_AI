@@ -1,0 +1,35 @@
+/* ValidationStates.css */
+
+.field-wrapper {
+  margin-bottom: 16px;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+/* State 1: AI missed — dashed orange border */
+.field-wrapper.ai-missed {
+  border: 2px dashed #e07b00;
+  background-color: #fff6ec;
+}
+
+/* State 2: needs review — solid yellow border */
+.field-wrapper.needs-review {
+  border: 2px solid #d4a600;
+  background-color: #fffbe6;
+}
+
+.field-message {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.missed-message {
+  color: #b35c00;
+}
+
+.review-message {
+  color: #a17d00;
+}
