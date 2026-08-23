@@ -1,16 +1,37 @@
 import { useState } from "react";
 import axios from "axios";
 
+// Day 16: the live extraction service is the ONLY default path.
+// The Week 2 keyword-based mock parser is retired from the primary flow and
+// exists solely as an explicit dev fallback, enabled by adding ?mock=1 to the
+// URL (e.g. http://localhost:5173/?mock=1). When active it shows a visible
+// MOCK badge so nobody mistakes mock results for real extraction output.
+const isMockMode = () =>
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("mock") === "1";
+
 export default function MagicInput({ formId, onExtracted }) {
   const [story, setStory] = useState("");
   const [extracting, setExtracting] = useState(false);
   const [extractError, setExtractError] = useState("");
+  const [mockMode] = useState(isMockMode);
 
   const handleExtract = async () => {
     if (!story.trim()) return;
 
     setExtracting(true);
     setExtractError("");
+
+    // Explicit dev-only mock path (?mock=1): parse locally, no API call.
+    if (mockMode) {
+      try {
+        onExtracted?.(buildMockExtraction(story));
+      } finally {
+        setExtracting(false);
+      }
+      return;
+    }
+
     try {
       const response = await axios.post(
         `http://localhost:5000/api/forms/${formId}/extract`,
@@ -18,10 +39,10 @@ export default function MagicInput({ formId, onExtracted }) {
       );
       onExtracted?.(response.data);
     } catch (error) {
-      setExtractError(
-        error.response?.data?.error ||
-          "Extraction service unavailable, please try again"
-      );
+      // Graceful degradation, never silent: surface WHY it failed using the
+      // backend's standardized { error } shape, with kind-specific fallbacks
+      // for cases where the shape isn't present (network drop, timeout).
+      setExtractError(friendlyError(error));
     } finally {
       setExtracting(false);
     }
@@ -29,9 +50,20 @@ export default function MagicInput({ formId, onExtracted }) {
 
   return (
     <div className="mb-6 p-4 border border-blue-200 rounded-lg bg-blue-50">
-      <label htmlFor="magic-input" className="block text-sm font-semibold text-blue-800 mb-1">
-        Magic Input
-      </label>
+      <div className="flex items-center justify-between">
+        <label htmlFor="magic-input" className="block text-sm font-semibold text-blue-800 mb-1">
+          Magic Input
+        </label>
+        {mockMode && (
+          <span
+            role="note"
+            aria-label="mock mode"
+            className="text-[10px] font-bold tracking-wide text-orange-700 bg-orange-100 border border-orange-300 rounded px-1.5 py-0.5"
+          >
+            MOCK — not calling the AI
+          </span>
+        )}
+      </div>
       <textarea
         id="magic-input"
         value={story}
@@ -52,4 +84,66 @@ export default function MagicInput({ formId, onExtracted }) {
       </button>
     </div>
   );
+}
+
+// Map failures to clear, actionable messages. The backend's standardized
+// error shape ({ error }) always wins; these fallbacks cover responses that
+// never made it back (network down, request cancelled, timeout).
+function friendlyError(error) {
+  const serverMessage = error?.response?.data?.error;
+  if (serverMessage) return serverMessage;
+
+  if (!error.response) {
+    return "Can't reach the server — check that the backend is running, then try again.";
+  }
+  const status = error.response.status;
+  if (status === 429) return "The AI service is rate-limited right now — wait a moment and try again.";
+  if (status === 503 || status >= 500) return "The AI service is temporarily unavailable — please try again.";
+  return "Extraction failed — please try again.";
+}
+
+// ---------------------------------------------------------------------------
+// DEV-ONLY mock extraction (?mock=1). Keyword matching only — good enough to
+// exercise the wiring without burning API credits. Never used by default.
+// ---------------------------------------------------------------------------
+export function buildMockExtraction(story) {
+  const extracted = {};
+  const lower = story.toLowerCase();
+
+  // Names — "My name is X", "I'm X", "Owner is X" (stops at and/./,)
+  const nameMatch = story.match(
+    /(?:my name is|i'm|i am|owner is)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+?)(?:\s+and|\.|,|$)/i
+  );
+  if (nameMatch) {
+    extracted.fullName = nameMatch[1].trim();
+    extracted.ownerName = nameMatch[1].trim();
+  }
+
+  // Country
+  if (lower.includes("united kingdom")) extracted.country = "United Kingdom";
+  else if (lower.includes("united states")) extracted.country = "United States";
+  else if (lower.includes("india")) extracted.country = "India";
+
+  // Insurance
+  if (/\b(have|has)\s+insurance\b/.test(lower)) extracted.hasInsurance = "Yes";
+  else if (/\b(don't|do not)\s+(have\s+)?insurance\b/.test(lower)) extracted.hasInsurance = "No";
+  const insuranceCompany = story.match(/insurance\s+with\s+([A-Z][A-Za-z\s]+?)(?:\.|,|$)/i);
+  if (insuranceCompany) extracted.insuranceCompany = insuranceCompany[1].trim();
+
+  // Vehicle type / number / category / model
+  if (/\b(it's a|is a|registering a)\s+car\b/.test(lower)) extracted.vehicleType = "Car";
+  else if (/\b(it's a|is a|registering a)\s+bike\b/.test(lower)) extracted.vehicleType = "Bike";
+  else if (/\b(it's a|is a|registering a)\s+truck\b/.test(lower)) extracted.vehicleType = "Truck";
+  const vehicleNumber = story.match(/\b([A-Z]{2}\d{4})\b/);
+  if (vehicleNumber) extracted.vehicleNumber = vehicleNumber[1];
+  if (/\bcategory is sedan\b/.test(lower)) extracted.vehicleCategory = "Sedan";
+  else if (/\bcategory is suv\b/.test(lower)) extracted.vehicleCategory = "SUV";
+  else if (/\bcategory is hatchback\b/.test(lower)) extracted.vehicleCategory = "Hatchback";
+  const model = story.match(/model is\s+([A-Za-z\s]+?)(?:\.|,|$)/i);
+  if (model) extracted.vehicleModel = model[1].trim();
+
+  // Confirmation checkbox
+  if (/\b(agree|accept|confirm)\b/.test(lower)) extracted.terms = true;
+
+  return extracted;
 }

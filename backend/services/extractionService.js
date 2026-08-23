@@ -58,23 +58,33 @@ function cleanExtraction(value, fields) {
 async function requestModelExtraction(client, story, fields, strict) {
   const formFields = schemaFields(fields);
   const fieldInstructions = JSON.stringify(formFields);
-  const completion = await client.chat.completions.create({
-    model: process.env.OPENAI_EXTRACTION_MODEL || "gpt-4o-mini",
-    response_format: { type: "json_object" },
-    timeout: Number(process.env.OPENAI_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
-    messages: [
-      {
-        role: "system",
-        content: strict
-          ? `Return valid JSON only. No markdown, code fences, prose, or extra keys. Use exactly the field names in this schema: ${fieldInstructions}. Return an empty string (or false for checkboxes) when uncertain.`
-          : `Extract the story into the supplied form schema. Return a flat JSON object with exactly the schema field names. Include conditional fields too; use each field's showIf rule to understand its relationship to the controlling field. Never guess. Return an empty string for unknown text/select fields and false for unknown checkboxes. For select fields, use an exact option value when options are supplied. Schema: ${fieldInstructions}. Return JSON only, with no markdown or prose.`,
-      },
-      {
-        role: "user",
-        content: story,
-      },
-    ],
-  });
+  const startedAt = Date.now();
+
+  // Give the model the live form schema so its JSON can be applied directly.
+  let completion;
+  try {
+    completion = await client.chat.completions.create({
+      model: process.env.OPENAI_EXTRACTION_MODEL || "gpt-4o-mini",
+      response_format: { type: "json_object" },
+      timeout: Number(process.env.OPENAI_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
+      messages: [
+        {
+          role: "system",
+          content: strict
+            ? `Return valid JSON only. No markdown, code fences, prose, or extra keys. Use exactly the field names in this schema: ${fieldInstructions}. Return an empty string (or false for checkboxes) when uncertain.`
+            : `Extract the story into the supplied form schema. Return a flat JSON object with exactly the schema field names. Include conditional fields too; use each field's showIf rule to understand its relationship to the controlling field. Never guess. Return an empty string for unknown text/select fields and false for unknown checkboxes. For select fields, use an exact option value when options are supplied. Schema: ${fieldInstructions}. Return JSON only, with no markdown or prose.`,
+        },
+        {
+          role: "user",
+          content: story,
+        },
+      ],
+    });
+    console.info(`[extraction] model request completed in ${Date.now() - startedAt}ms`);
+  } catch (error) {
+    console.warn(`[extraction] model request failed after ${Date.now() - startedAt}ms`);
+    throw error;
+  }
 
   const content = completion.choices[0]?.message?.content;
   if (typeof content !== "string") {
@@ -114,8 +124,7 @@ async function extractFromStory(text, fields) {
   try {
     return cleanExtraction(await requestModelExtraction(client, text, fields, false), fields);
   } catch (error) {
-    console.error("AI extraction attempt failed:", error.message);
-
+    // Provider failures are surfaced to the route; malformed output gets one stricter retry.
     if (isProviderFailure(error)) {
       throw new ExtractionServiceError(providerErrorKind(error));
     }
@@ -123,11 +132,10 @@ async function extractFromStory(text, fields) {
     try {
       return cleanExtraction(await requestModelExtraction(client, text, fields, true), fields);
     } catch (retryError) {
-      console.error("AI extraction retry failed; using empty fallback:", retryError.message);
-
       if (isProviderFailure(retryError)) {
         throw new ExtractionServiceError(providerErrorKind(retryError));
       }
+      // Invalid model output must not break form completion; return schema-safe defaults.
       return emptyExtraction(fields);
     }
   }

@@ -1,247 +1,89 @@
-# Forma AI — Dynamic Form Schema
+# Forma AI — Live Extraction API Contract
 
-## Purpose
+## Endpoint
 
-Forma AI needs a dynamic form schema so that forms can be
-created and rendered from structured data.
+`POST /api/forms/:id/extract`
 
-## Form
-
-A form contains:
-
-
-
-- title
-- description
-- fields
-
-## Field
-
-Each field contains:
-
-- name
-- label
-- type
-- required
-- order
-
-## Example Form
+Request body:
 
 ```json
-{
-  "title": "Basic Information",
-  "description": "Collect basic user information",
-  "fields": [
-    {
-      "name": "fullName",
-      "label": "Full Name",
-      "type": "text",
-      "required": true,
-      "order": 1
-    },
-    {    git remote set-url origin https://github.com/<owner>/<repo-name>.git
-      "name": "email",
-      "label": "Email Address",
-      "type": "text",
-      "required": true,
-      "order": 2
-    }
-  ]
-}
-# Forma AI — LLM Extraction Output Schema
+{ "story": "I hit a deer in my Honda and the windshield shattered." }
+```
 
-## Day 8 — LLM Extraction Schema
+`story` is required and must be a non-empty string.
 
-### Purpose
+## Successful response
 
-Forma AI will allow a user to describe an incident using
-natural language.
+The endpoint returns HTTP `200` with a flat JSON object. Its keys are **exactly**
+the `name` values from the requested form's stored `fields` schema; unknown model
+keys are removed. This makes the response directly usable as form values.
 
-The LLM will extract useful information from the user's story
-and return it in a strict JSON format.
+Value types are normalized as follows:
 
-The extracted JSON will then be mapped to the existing
-dynamic form fields.
+| Form field type | Response value |
+| --- | --- |
+| `checkbox` | boolean (`false` when unknown) |
+| all other field types | string (empty string when unknown) |
 
----
-
-## 1. Entities to Extract
-
-The first version of Forma AI will extract these entities:
-
-- incidentType
-- vehicle
-- damage
-- location
-- date
-
-### Entity Description
-
-| Entity | Description |
-|---|---|
-| incidentType | Type of incident reported by the user |
-| vehicle | Vehicle involved in the incident |
-| damage | Damage described by the user |
-| location | Location where the incident happened |
-| date | Date or relative date of the incident |
-
----
-
-## 2. LLM Output Format
-
-The LLM must return a JSON object.
-
-The output should follow this structure:
+For the current incident form, the response contract is:
 
 ```json
-{
-  "incidentType": "animal_collision",
-  "vehicle": "Honda",
-  "damage": "windshield",
-  "location": "I-95",
-  "date": "yesterday"
-}
-
-## Day 9 — LLM Extraction to Form Field Mapping
-
-### Purpose
-
-This mapping defines how LLM extraction entities map
-to the existing dynamic form field names.
-
-| LLM Entity | Form Field Name | Purpose |
-|---|---|---|
-| incidentType | incidentType | Type of incident |
-| vehicle | vehicle | Vehicle involved |
-| damage | damage | Damage reported |
-
-### Mapping Rules
-
-1. LLM extraction keys must use the agreed entity names.
-2. Form field names must remain consistent with the mapping.
-3. Any naming mismatch must be resolved before integration.
-4. The mapping should be directly usable by the frontend
-   when populating form values.
-
-### Example
-
-LLM Output:
-
 {
   "incidentType": "animal_collision",
   "vehicle": "Honda",
   "damage": "windshield"
 }
+```
 
-Mapping:
-
-incidentType → incidentType
-vehicle → vehicle
-damage → damage
-
-
-## Day 11 — Final LLM Extraction Schema
-
-### Purpose
-
-This section defines the finalized LLM extraction schema
-for Forma AI Week 2.
-
-The schema defines:
-
-- Extracted entities
-- Field aliases
-- Extraction-to-form mapping
-- Expected JSON output
-- Worked examples
-- Items requiring further validation in Week 3
-
----
-
-## 1. Final Extraction Entities
-
-The current approved extraction entities are:
-
-- incidentType
-- vehicle
-- damage
-
----
-
-## 2. Final Extraction-to-Form Mapping
-
-| LLM Extraction Key | Form Field Name | Example |
-|---|---|---|
-| incidentType | incidentType | animal_collision |
-| vehicle | vehicle | Honda |
-| damage | damage | windshield |
-
-The extraction key should remain consistent with
-the corresponding form field name.
-
----
-
-## 3. Field Aliases
-
-Aliases allow the extraction system to recognize
-different natural-language expressions for the same field.
-
-### vehicle
+An incomplete story still receives HTTP `200`; missing values use the defaults:
 
 ```json
-[
-  "car",
-  "vehicle",
-  "automobile",
-  "honda"
-]
+{
+  "incidentType": "",
+  "vehicle": "",
+  "damage": ""
+}
+```
 
+Conditional fields are included in the response as well. The model receives each
+field's name, label, type, options, and conditional rule so nested form schemas
+can be populated without a mock-only mapping.
 
+## Errors
 
+All error bodies use a single `error` string and never expose provider details,
+prompts, or raw model output.
 
-```md
----
+| Status | When | Response |
+| --- | --- | --- |
+| `400` | Invalid form id | `{ "error": "Invalid form ID" }` |
+| `400` | Missing or blank story | `{ "error": "story is required" }` |
+| `404` | Form does not exist | `{ "error": "Form not found" }` |
+| `429` | Provider rate limit | `{ "error": "Extraction service unavailable, please try again" }` |
+| `503` | Provider timeout or availability failure | `{ "error": "Extraction service unavailable, please try again" }` |
+| `500` | Unexpected server failure | `{ "error": "Extraction service unavailable, please try again" }` |
 
-## Day 15 — Live Extraction Schema Review
+The provider request has a 15-second default timeout (`OPENAI_TIMEOUT_MS` can
+override it). If model output is malformed, the service retries once with a
+stricter JSON-only instruction, then returns schema-safe default values if that
+retry is also malformed.
 
-### Purpose
+## Operational logging
 
-The finalized extraction schema was reviewed against real
-(non-mock) extraction responses.
+Each model attempt records only its outcome and duration in milliseconds. Story
+content, prompts, and model responses are deliberately not logged. These logs
+make slow live extractions visible without exposing user data.
 
-### Live Extraction Response Alignment
-
-The live extraction response should use the same field names
-defined in the finalized extraction-to-form mapping.
-
-| Live Extraction Key | Form Field Name | Type |
-|---|---|---|
-| incidentType | incidentType | string |
-| vehicle | vehicle | string |
-| damage | damage | string |
-
-### Live Extraction Reliability
-
-Based on live extraction testing:
-
-- incidentType: review for consistent classification.
-- vehicle: generally reliable when explicitly mentioned.
-- damage: review for consistent damage descriptions.
-- Missing information should not be guessed by the LLM.
-
-### Schema Review Findings
-
-- Extraction keys must match the finalized form field names.
-- Field types must remain consistent with the live response.
-- Alias-based matching should support natural-language variations.
-- Any unreliable fields should be shared with Member 3 for prompt tuning.
-
-### Integration Notes
+## Frontend integration
 
 - Share the live extraction findings with Member 3.
 - Share the finalized extraction-to-form mapping with Member 1.
 - Frontend wiring should consume the agreed extraction keys directly.
 
+`FormRenderer` should call this endpoint as the default, non-mock extraction
+path and merge the returned object directly into values for matching form field
+names. Consumers must not depend on extra keys or on a fixed incident-only
+schema; the stored form schema is authoritative.
 
 ---
 

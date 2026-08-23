@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const Form = require("../models/Form");
 const validateRequiredFields = require("../validateSubmission");
-const { extractFields } = require("../services/extractionService");
 
 
 // Get form by ID
@@ -76,38 +75,7 @@ async function submitForm(req, res) {
 }
 
 
-// Extract fields from user story
-async function extractFormFields(req, res) {
-  const { id } = req.params;
-  const { story } = req.body;
-
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      error: "Invalid form ID",
-    });
-  }
-
-  if (!story || typeof story !== "string" || !story.trim()) {
-    return res.status(400).json({
-      error: "Story is required",
-    });
-  }
-
-  try {
-    const result = await extractFields(story);
-
-    return res.status(200).json(result);
-  } catch (error) {
-    return res.status(500).json({
-      error: "Failed to extract form fields",
-      details: error.message,
-    });
-  }
-}
-
-
 module.exports = {
   getFormById,
   submitForm,
-  extractFormFields,
 };
