@@ -241,3 +241,36 @@ Based on live extraction testing:
 - Share the live extraction findings with Member 3.
 - Share the finalized extraction-to-form mapping with Member 1.
 - Frontend wiring should consume the agreed extraction keys directly.
+
+
+---
+
+## Day 16 — Ambiguity Handling and Review Guidance
+
+### Purpose
+
+The extraction schema should identify information that may be
+ambiguous or low-confidence instead of allowing uncertain
+values to be treated as fully reliable.
+
+This guidance defines which extracted fields can be trusted
+automatically and which fields require human review.
+
+### Confidence / Review Concept
+
+The extraction output may optionally include a review indicator
+for fields where the extracted value is uncertain.
+
+Example:
+
+```json
+{
+  "vehicle": {
+    "value": "Honda",
+    "reviewRequired": false
+  },
+  "damage": {
+    "value": "front bumper",
+    "reviewRequired": true
+  }
+}
