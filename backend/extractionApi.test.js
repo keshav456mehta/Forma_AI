@@ -4,10 +4,14 @@ const stories = require("../fixtures/stories");
 const API_URL =
   process.env.API_URL || "http://localhost:5000/api/forms";
 
+// These checks require an already-running API and a seeded form. Keep them
+// opt-in so the normal unit suite remains deterministic and offline.
+const describeLiveApi = process.env.API_URL ? describe : describe.skip;
+
 const formId =
   process.env.EXTRACTION_FORM_ID || "507f1f77bcf86cd799439011";
 
-describe("LLM Extraction API", () => {
+describeLiveApi("LLM Extraction API", () => {
   test("extracts fields from a clear user story", async () => {
     const story = stories.find((item) => item.id === "story-1");
 

@@ -28,6 +28,27 @@ test("shows the standardized extraction error returned by the backend", async ()
   );
 });
 
+test.each([
+  [429, "rate_limit", "rate-limited"],
+  [503, "timeout", "took too long"],
+  [503, "unavailable", "temporarily unavailable"],
+])("shows a distinct recovery message for %s/%s failures", async (status, kind, expectedText) => {
+  axios.post.mockRejectedValueOnce({
+    response: {
+      status,
+      data: { error: "Extraction service unavailable, please try again", kind },
+    },
+  });
+
+  render(<MagicInput formId="507f1f77bcf86cd799439011" onExtracted={vi.fn()} />);
+  fireEvent.change(screen.getByRole("textbox"), {
+    target: { value: "My car was damaged." },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Auto-fill from story" }));
+
+  expect((await screen.findByRole("alert")).textContent).toContain(expectedText);
+});
+
 // Day 16: a network-level failure (no HTTP response at all) must degrade
 // gracefully with an actionable message, not a generic one.
 test("shows an actionable message when the server is unreachable", async () => {
