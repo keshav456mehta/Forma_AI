@@ -123,8 +123,31 @@ describe("extractFromStory", () => {
         message: "Extraction service unavailable, please try again",
       })
     );
-    expect(create).toHaveBeenCalledTimes(1);
+    expect(create).toHaveBeenCalledTimes(3);
     expect(create.mock.calls[0][0].timeout).toBe(15000);
+  });
+
+  test("retries transient provider failures with bounded backoff before succeeding", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    const transientError = Object.assign(new Error("gateway unavailable"), {
+      status: 503,
+    });
+    const create = jest.fn()
+      .mockRejectedValueOnce(transientError)
+      .mockRejectedValueOnce(transientError)
+      .mockResolvedValueOnce({ choices: [{ message: { content: JSON.stringify({
+        incidentType: "collision",
+        vehicle: "Honda",
+        damage: "bumper",
+      }) } }] });
+    OpenAI.mockImplementation(() => ({ chat: { completions: { create } } }));
+
+    await expect(extractFromStory("A story", fields)).resolves.toEqual({
+      incidentType: "collision",
+      vehicle: "Honda",
+      damage: "bumper",
+    });
+    expect(create).toHaveBeenCalledTimes(3);
   });
 
   test("reports rate limits as a typed provider failure", async () => {
@@ -133,11 +156,11 @@ describe("extractFromStory", () => {
       status: 429,
       name: "RateLimitError",
     });
-    OpenAI.mockImplementation(() => ({
-      chat: { completions: { create: jest.fn().mockRejectedValue(rateLimitError) } },
-    }));
+    const create = jest.fn().mockRejectedValue(rateLimitError);
+    OpenAI.mockImplementation(() => ({ chat: { completions: { create } } }));
     await expect(extractFromStory("A story", fields)).rejects.toBeInstanceOf(
       ExtractionServiceError
     );
+    expect(create).toHaveBeenCalledTimes(1);
   });
 });

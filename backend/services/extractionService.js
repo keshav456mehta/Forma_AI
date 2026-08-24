@@ -1,6 +1,8 @@
 const OpenAI = require("openai");
 
 const DEFAULT_TIMEOUT_MS = 15_000;
+const MAX_TRANSIENT_RETRIES = 2;
+const RETRY_BASE_DELAY_MS = 150;
 
 class ExtractionServiceError extends Error {
   constructor(kind) {
@@ -95,14 +97,46 @@ async function requestModelExtraction(client, story, fields, strict) {
 }
 
 function isProviderFailure(error) {
-  return !(error instanceof SyntaxError) &&
-    (error?.status === 429 || error?.status >= 500 || error?.code || error?.name);
+  return !(error instanceof SyntaxError) && Boolean(
+    error?.status === 429 || error?.status >= 500 || error?.code ||
+    error?.name === "APIConnectionTimeoutError" ||
+    error?.name === "RateLimitError"
+  );
 }
 
 function providerErrorKind(error) {
   if (error?.status === 429 || error?.name === "RateLimitError") return "rate_limit";
   if (error?.name === "APIConnectionTimeoutError" || error?.code === "ETIMEDOUT") return "timeout";
   return "unavailable";
+}
+
+function isTransientProviderFailure(error) {
+  // Do not retry client-side/provider rate-limit errors: retrying them adds
+  // load when the service has explicitly asked us to slow down.
+  return error?.status === 408 || error?.status >= 500 ||
+    error?.code === "ETIMEDOUT" || error?.code === "ECONNRESET" ||
+    error?.code === "ECONNREFUSED" || error?.code === "ENOTFOUND" ||
+    error?.name === "APIConnectionTimeoutError";
+}
+
+function sleep(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function requestWithTransientRetry(client, story, fields) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await requestModelExtraction(client, story, fields, false);
+    } catch (error) {
+      if (!isTransientProviderFailure(error) || attempt >= MAX_TRANSIENT_RETRIES) {
+        throw error;
+      }
+
+      const delay = RETRY_BASE_DELAY_MS * (2 ** attempt);
+      console.warn(`[extraction] transient provider failure; retrying in ${delay}ms (attempt ${attempt + 1}/${MAX_TRANSIENT_RETRIES})`);
+      await sleep(delay);
+    }
+  }
 }
 
 /**
@@ -122,7 +156,7 @@ async function extractFromStory(text, fields) {
     timeout: Number(process.env.OPENAI_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
   });
   try {
-    return cleanExtraction(await requestModelExtraction(client, text, fields, false), fields);
+    return cleanExtraction(await requestWithTransientRetry(client, text, fields), fields);
   } catch (error) {
     // Provider failures are surfaced to the route; malformed output gets one stricter retry.
     if (isProviderFailure(error)) {
