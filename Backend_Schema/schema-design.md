@@ -51,22 +51,27 @@ can be populated without a mock-only mapping.
 
 ## Errors
 
-All error bodies use a single `error` string and never expose provider details,
-prompts, or raw model output.
+All error bodies use a safe `error` string and never expose provider details,
+prompts, or raw model output. Provider failures also include a machine-readable
+`kind` (`rate_limit`, `timeout`, or `unavailable`) so the frontend can show a
+specific recovery message.
 
 | Status | When | Response |
 | --- | --- | --- |
 | `400` | Invalid form id | `{ "error": "Invalid form ID" }` |
 | `400` | Missing or blank story | `{ "error": "story is required" }` |
 | `404` | Form does not exist | `{ "error": "Form not found" }` |
-| `429` | Provider rate limit | `{ "error": "Extraction service unavailable, please try again" }` |
-| `503` | Provider timeout or availability failure | `{ "error": "Extraction service unavailable, please try again" }` |
+| `429` | Provider rate limit | `{ "error": "Extraction service unavailable, please try again", "kind": "rate_limit" }` |
+| `503` | Provider timeout or availability failure | `{ "error": "Extraction service unavailable, please try again", "kind": "timeout" }` |
 | `500` | Unexpected server failure | `{ "error": "Extraction service unavailable, please try again" }` |
 
 The provider request has a 15-second default timeout (`OPENAI_TIMEOUT_MS` can
-override it). If model output is malformed, the service retries once with a
-stricter JSON-only instruction, then returns schema-safe default values if that
-retry is also malformed.
+override it). This remains the observed baseline because no persisted Day 15
+latency data is available in the repository. Network timeouts, connection
+resets, and momentary provider 5xx responses retry up to twice with 150 ms then
+300 ms backoff. Rate limits and invalid input are never retried. If model output
+is malformed, the service retries once with a stricter JSON-only instruction,
+then returns schema-safe default values if that retry is also malformed.
 
 ## Operational logging
 
@@ -154,3 +159,4 @@ The expanded aliases were re-tested against Member 5's fixture set.
 Alias coverage should reduce extraction misses caused by
 natural-language phrasing while preserving the existing
 extraction logic.
+

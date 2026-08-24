@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 
@@ -6,6 +6,15 @@ import TextField from "./TextField";
 import Checkbox from "./Checkbox";
 import Dropdown from "./DropDown";
 import MagicInput from "./MagicInput";
+import { AIMissedField, NeedsReviewField } from "./ValidationStates";
+
+// Day 17: drop a single key out of an AI-state map without mutating state.
+function clearFlag(flags, fieldName) {
+  if (!flags[fieldName]) return flags;
+  const next = { ...flags };
+  delete next[fieldName];
+  return next;
+}
 
 // Returns true if a field should be visible, based on its showIf rule
 // (e.g. only show "Insurance Company" if "hasInsurance" === "Yes").
@@ -21,6 +30,14 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submissionStatus, setSubmissionStatus] = useState("");
+
+  // Day 17: AI-validation UI state, keyed by field name.
+  //   aiMissedFields — the latest extraction couldn't fill these (need human entry)
+  //   aiReviewFields — the latest extraction DID fill these (need human double-check)
+  // Both clear per-field the moment the user edits that field manually.
+  const [aiMissedFields, setAiMissedFields] = useState({});
+  const [aiReviewFields, setAiReviewFields] = useState({});
+  const [aiWarning, setAiWarning] = useState("");
 
   const {
     register,
@@ -57,35 +74,58 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
   const applyExtractedData = (extractedData) => {
     if (!extractedData || !schema?.fields) return;
 
+    const missedNow = {};
+    const reviewNow = {};
+
     schema.fields.forEach((field) => {
       const fieldName = field.name || field.id;
       const extractedValue = extractedData[fieldName];
 
       // Only set fields the AI actually extracted a value for —
       // empty string = missed, false = unknown checkbox. Both are left
-      // untouched for manual entry (and Praveen's missed-field highlight).
+      // untouched for manual entry and flagged with the AI-missed highlight.
       const isMissed =
         extractedValue === undefined ||
         extractedValue === null ||
         extractedValue === "" ||
         extractedValue === false;
 
+      if (isMissed) {
+        missedNow[fieldName] = true;
+        return;
+      }
+
       // shouldDirty: true is required so watch() picks up the programmatic
       // change and triggers a re-render — without it, showIf conditions
       // won't react to AI-populated values (Day 11 fix).
-      if (!isMissed) {
-        setValue(fieldName, extractedValue, {
-          shouldValidate: true,
-          shouldDirty: true,
-        });
-      }
+      setValue(fieldName, extractedValue, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+
+      // AI-filled: keep until a human confirms by editing the field.
+      reviewNow[fieldName] = true;
     });
+
+    // A new extraction replaces the previous AI states wholesale.
+    setAiMissedFields(missedNow);
+    setAiReviewFields(reviewNow);
+  };
+
+  // Day 17: any manual edit overrides the AI — clear both AI states for that
+  // field so its highlight disappears as soon as the user starts typing.
+  const handleUserChange = (fieldName, rhfOnChange) => (event) => {
+    setAiMissedFields((prev) => clearFlag(prev, fieldName));
+    setAiReviewFields((prev) => clearFlag(prev, fieldName));
+    setAiWarning("");
+    rhfOnChange(event);
   };
 
   // Submit the filled-in form data to the backend for validation/storage.
-  const onSubmit = async (data) => {
+  const onValidSubmit = async (data) => {
     setSubmissionStatus("");
     setError(null);
+    setAiWarning("");
 
     try {
       const response = await axios.post(
@@ -98,6 +138,35 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
       const message = err.response?.data?.error || "Failed to submit the form.";
       setError(message);
     }
+  };
+
+  // Day 17: submission was blocked by client-side validation. When the
+  // blockers include required fields the AI never extracted, say so
+  // explicitly — a generic "X is required" alone doesn't tell the user WHY
+  // the field is empty or that they need to fill it themselves.
+  const onInvalidSubmit = (errors) => {
+    const missedRequired = [];
+
+    schema?.fields?.forEach((field) => {
+      const fieldId = field.name || field.id;
+      if (
+        field.required &&
+        errors[fieldId]?.type === "required" &&
+        aiMissedFields[fieldId]
+      ) {
+        missedRequired.push(field.label || fieldId);
+      }
+    });
+
+    setAiWarning(
+      missedRequired.length > 0
+        ? `The AI couldn't fill ${missedRequired.length} required field${
+            missedRequired.length > 1 ? "s" : ""
+          }: ${missedRequired.join(", ")}. Please complete ${
+            missedRequired.length > 1 ? "them" : "it"
+          } before submitting.`
+        : ""
+    );
   };
 
   if (loading) {
@@ -114,7 +183,7 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
 
   return (
     <form
-      onSubmit={handleSubmit(onSubmit)}
+      onSubmit={handleSubmit(onValidSubmit, onInvalidSubmit)}
       className="w-full max-w-md mx-auto px-4 sm:px-6 py-6"
     >
       <h2 className="text-2xl font-bold mb-2">{schema.title}</h2>
@@ -150,49 +219,65 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
             : {}),
         };
 
+        // Day 17: intercept onChange so ANY manual edit clears this field's
+        // AI state — human input always wins over both "missed" and
+        // "needs review" flags. Everything else from register() passes through.
+        const registration = register(field.name, validationRules);
+        const registrationProps = {
+          ...registration,
+          onChange: handleUserChange(fieldId, registration.onChange),
+        };
+
         const fieldError = errors?.[field.name]?.message;
 
+        let fieldNode;
         if (fieldType === "checkbox") {
-          return (
+          fieldNode = (
             <Checkbox
-              key={fieldId}
               id={fieldId}
               label={field.label}
               required={field.required}
               error={fieldError}
-              {...register(field.name, validationRules)}
+              {...registrationProps}
             />
           );
-        }
-
-        if (fieldType === "dropdown") {
-          return (
+        } else if (fieldType === "dropdown") {
+          fieldNode = (
             <Dropdown
-              key={fieldId}
               id={fieldId}
               name={field.name}
               label={field.label}
               required={field.required}
               options={field.options || []}
               error={fieldError}
-              {...register(field.name, validationRules)}
+              {...registrationProps}
+            />
+          );
+        } else {
+          // Default case: render as a text field.
+          fieldNode = (
+            <TextField
+              id={fieldId}
+              name={field.name}
+              label={field.label}
+              required={field.required}
+              placeholder={field.placeholder}
+              error={fieldError}
+              {...registrationProps}
             />
           );
         }
 
-        // Default case: render as a text field.
-        return (
-          <TextField
-            key={fieldId}
-            id={fieldId}
-            name={field.name}
-            label={field.label}
-            required={field.required}
-            placeholder={field.placeholder}
-            error={fieldError}
-            {...register(field.name, validationRules)}
-          />
-        );
+        // Day 17: wrap with Member 4's validation states where applicable.
+        // The wrappers add border + guidance message; no label passed because
+        // the inner components already render accessible labels.
+        if (aiMissedFields[fieldId]) {
+          return <AIMissedField key={fieldId}>{fieldNode}</AIMissedField>;
+        }
+        if (aiReviewFields[fieldId]) {
+          return <NeedsReviewField key={fieldId}>{fieldNode}</NeedsReviewField>;
+        }
+        return <Fragment key={fieldId}>{fieldNode}</Fragment>;
       })}
 
       <button
@@ -202,6 +287,14 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
       >
         {isSubmitting ? "Submitting..." : "Submit"}
       </button>
+
+      {/* Day 17: explicit warning when submission is blocked because required
+          fields the AI missed are still empty. */}
+      {aiWarning && (
+        <p role="alert" className="mt-3 text-sm font-medium text-orange-700">
+          {aiWarning}
+        </p>
+      )}
 
       {submissionStatus && (
         <p role="status" className="mt-4 text-green-600">

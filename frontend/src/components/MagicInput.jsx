@@ -90,6 +90,17 @@ export default function MagicInput({ formId, onExtracted }) {
 // error shape ({ error }) always wins; these fallbacks cover responses that
 // never made it back (network down, request cancelled, timeout).
 function friendlyError(error) {
+  const kind = error?.response?.data?.kind;
+  if (kind === "rate_limit") {
+    return "The AI service is rate-limited right now — wait a moment and try again.";
+  }
+  if (kind === "timeout") {
+    return "The AI service took too long to respond — please try again.";
+  }
+  if (kind === "unavailable") {
+    return "The AI service is temporarily unavailable — please try again.";
+  }
+
   const serverMessage = error?.response?.data?.error;
   if (serverMessage) return serverMessage;
 

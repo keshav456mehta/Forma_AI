@@ -4,8 +4,8 @@ const stories = require("../fixtures/stories");
 const API_URL =
   process.env.API_URL || "http://localhost:5000/api/forms";
 
-// These tests exercise a running API; the normal Jest suite does not start
-// one. Run them explicitly with API_URL=http://localhost:5000/api/forms.
+// These checks require an already-running API and a seeded form. Keep them
+// opt-in so the normal unit suite remains deterministic and offline.
 const describeLiveApi = process.env.API_URL ? describe : describe.skip;
 
 const formId =
