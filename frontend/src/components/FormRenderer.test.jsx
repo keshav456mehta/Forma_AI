@@ -218,4 +218,94 @@ describe("FormRenderer", () => {
     expect(screen.getByLabelText("City")).toHaveValue("Mumbai");
     expect(screen.getByLabelText("Full Name")).toHaveValue("Rajesh Kumar");
   });
+
+  // Day 17: after a partial extraction, missed fields get the ❓ highlight
+  // and AI-filled fields get the ⚠️ needs-review highlight. Any manual edit
+  // clears that field's highlight immediately.
+  it("highlights AI-missed vs AI-filled fields and clears highlights on manual edit", async () => {
+    axios.get.mockResolvedValue({
+      data: {
+        title: "Basic Form",
+        fields: [
+          { name: "fullName", label: "Full Name", type: "text" },
+          { name: "city", label: "City", type: "text" },
+        ],
+      },
+    });
+
+    render(<FormRenderer formId="form-id" />);
+    await screen.findByText("Basic Form");
+
+    // Live extraction run with partial results: fullName extracted, city missed
+    axios.post.mockResolvedValueOnce({ data: { fullName: "Rajesh Kumar", city: "" } });
+    await act(async () => {
+      fireEvent.change(document.getElementById("magic-input"), {
+        target: { value: "My name is Rajesh Kumar." },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /auto-fill/i }));
+    });
+
+    // Missed → ❓ message; filled → ⚠️ message
+    expect(screen.getByText(/AI couldn't find this/)).toBeInTheDocument();
+    expect(screen.getByText(/Please double-check this value/)).toBeInTheDocument();
+
+    // Manually filling the missed field clears its ❓ highlight
+    fireEvent.change(screen.getByLabelText("City"), { target: { value: "Mumbai" } });
+    expect(screen.queryByText(/AI couldn't find this/)).not.toBeInTheDocument();
+
+    // Manually editing an AI-filled field clears its ⚠️ highlight too
+    fireEvent.change(screen.getByLabelText("Full Name"), {
+      target: { value: "Keshav Mehta" },
+    });
+    expect(screen.queryByText(/Please double-check this value/)).not.toBeInTheDocument();
+  });
+
+  // Day 17: submitting while a REQUIRED AI-missed field is still empty must
+  // be blocked with a warning that names the fields — not just the generic
+  // "X is required". Filling the field must let submission go through.
+  it("blocks submit with a named warning when required AI-missed fields are empty", async () => {
+    axios.get.mockResolvedValue({
+      data: {
+        title: "Claim Form",
+        fields: [{ name: "incidentDate", label: "Incident Date", type: "text", required: true }],
+      },
+    });
+
+    render(<FormRenderer formId="form-id" />);
+    await screen.findByText("Claim Form");
+
+    // Extraction misses the required field entirely
+    axios.post.mockResolvedValueOnce({ data: { incidentDate: "" } });
+    await act(async () => {
+      fireEvent.change(document.getElementById("magic-input"), {
+        target: { value: "something happened last week." },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /auto-fill/i }));
+    });
+
+    expect(await screen.findByText(/AI couldn't find this/)).toBeInTheDocument();
+
+    // Attempt to submit → blocked, with a warning naming Incident Date
+    // (handleSubmit resolves async, so wait for the alert to appear)
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+    const warning = await screen.findByRole("alert");
+    expect(warning.textContent).toContain("The AI couldn't fill");
+    expect(warning.textContent).toContain("Incident Date");
+    // No submission request went out — only the extraction POST
+    expect(axios.post).toHaveBeenCalledTimes(1);
+
+    // Fill the missed field manually → highlight clears, submit succeeds
+    // (regex match — required fields render a trailing "*" in their label)
+    axios.post.mockResolvedValueOnce({ data: { message: "Submission is valid" } });
+    fireEvent.change(screen.getByLabelText(/Incident Date/), {
+      target: { value: "2026-08-20" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Submission is valid");
+    expect(axios.post).toHaveBeenCalledWith(
+      "http://localhost:5000/api/forms/form-id/submit",
+      { incidentDate: "2026-08-20" }
+    );
+  });
 });
