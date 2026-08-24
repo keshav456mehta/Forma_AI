@@ -80,6 +80,12 @@ make slow live extractions visible without exposing user data.
 - Share the finalized extraction-to-form mapping with Member 1.
 - Frontend wiring should consume the agreed extraction keys directly.
 
+---
+
+- Share the live extraction findings with Member 3.
+- Share the finalized extraction-to-form mapping with Member 1.
+- Frontend wiring should consume the agreed extraction keys directly.
+
 `FormRenderer` should call this endpoint as the default, non-mock extraction
 path and merge the returned object directly into values for matching form field
 names. Consumers must not depend on extra keys or on a fixed incident-only
@@ -116,3 +122,35 @@ Example:
     "reviewRequired": true
   }
 }
+
+---
+
+## Day 17 — Extended Field Alias Coverage
+
+### Purpose
+
+Alias coverage was expanded based on real user-story phrasing
+observed during Week 2 and Week 3 extraction testing.
+
+### Expanded Field Alias Table
+
+| Field | Aliases | Source / Reason |
+|---|---|---|
+| vehicle | car, vehicle, automobile, honda | Existing aliases and observed vehicle phrasing |
+| damage | TBD | Add only aliases confirmed by fixture misses |
+| incidentType | TBD | Add only aliases confirmed by fixture misses |
+
+### Fixture Re-test
+
+The expanded aliases were re-tested against Member 5's fixture set.
+
+- Phrasing-related extraction misses were reviewed.
+- New aliases were added for recurring phrasing gaps.
+- Logic-related extraction failures were not treated as alias issues.
+- Results were compared before and after alias expansion.
+
+### Result
+
+Alias coverage should reduce extraction misses caused by
+natural-language phrasing while preserving the existing
+extraction logic.
