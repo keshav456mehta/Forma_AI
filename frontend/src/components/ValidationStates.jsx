@@ -11,10 +11,13 @@ import React from "react";
 import "./ValidationStates.css";
 
 // State 1: AI Missed This Field
+// Integration note (Day 17): `label` is optional — when wrapping Week 1 field
+// components (TextField/Dropdown) those already render their own accessible
+// <label htmlFor>, so passing none avoids a duplicate visible label.
 export function AIMissedField({ label, children }) {
   return (
     <div className="field-wrapper ai-missed">
-      <label>{label}</label>
+      {label && <label>{label}</label>}
       {children}
       <div className="field-message missed-message">
         <span aria-hidden="true">❓</span>
@@ -28,7 +31,7 @@ export function AIMissedField({ label, children }) {
 export function NeedsReviewField({ label, children }) {
   return (
     <div className="field-wrapper needs-review">
-      <label>{label}</label>
+      {label && <label>{label}</label>}
       {children}
       <div className="field-message review-message">
         <span aria-hidden="true">⚠️</span>
