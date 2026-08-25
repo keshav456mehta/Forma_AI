@@ -112,4 +112,23 @@ export const sampleStories = [
     },
     formTitle: "Vehicle Registration - 3-Level Branching",
   },
+
+  // Day 18: deliberately AMBIGUOUS story — added by Member 1 for correction-
+  // flow testing; Member 5 to own/refine. A naive extractor will likely fill
+  // ownerName/fullName with "Amit Sharma", but Amit is the BROTHER — the
+  // person registering is the storyteller. Plausible-but-wrong values like
+  // this must land as needs-review so the human can correct them.
+  {
+    name: "Ambiguous - third-party owner story",
+    story:
+      "My brother Amit Sharma owns the car I'm registering. It's a Car with registration number DL9999.",
+    expectedFields: {
+      // NOTE: ownerName may come back as "Amit Sharma" — WRONG on purpose.
+      // The test asserts the needs-review highlight appears and the user's
+      // manual correction sticks over any later re-extraction.
+      vehicleType: "Car",
+      vehicleNumber: "DL9999",
+    },
+    formTitle: "Vehicle Registration",
+  },
 ];
