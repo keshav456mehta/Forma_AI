@@ -160,3 +160,48 @@ Alias coverage should reduce extraction misses caused by
 natural-language phrasing while preserving the existing
 extraction logic.
 
+
+
+## Day 18 — AI-Filled vs Manually-Edited Field Handling
+
+### Purpose
+
+The form should support the rule that a manual correction always
+takes precedence over an AI-filled value.
+
+### Value Ownership
+
+Extracted values are initially treated as AI-filled values.
+
+When a user manually edits an AI-filled field, the manually entered
+value becomes the authoritative value for that field.
+
+The frontend should not overwrite a manually corrected value with a
+later AI extraction result.
+
+### Correction Behavior
+
+| Field State | Authoritative Value |
+|---|---|
+| AI-filled, not edited | AI-extracted value |
+| Manually edited | User-provided value |
+| AI-filled and then manually corrected | Manually corrected value |
+| Missing AI value, manually entered | User-provided value |
+
+### Correction Tracking
+
+The current schema stores the field value itself but does not require
+a separate persisted flag identifying whether the value originated
+from AI or from a user correction.
+
+For the current implementation, this distinction may be handled by
+frontend state.
+
+If correction history needs to be persisted in the backend later,
+the schema may need metadata such as:
+
+```json
+{
+  "value": "Honda",
+  "source": "manual"
+}
