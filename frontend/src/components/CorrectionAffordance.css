@@ -1,0 +1,16 @@
+/* src/components/CorrectionAffordance.css */
+.correction-affordance {
+  font-size: 0.75rem;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin-left: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.correction-affordance:hover {
+  background: #fde68a;
+}
