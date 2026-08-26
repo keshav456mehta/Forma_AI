@@ -1,0 +1,34 @@
+/* src/components/SubmitBlockedWarning.css */
+.submit-blocked-warning {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  color: #92400e;
+}
+
+.submit-blocked-warning__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.submit-blocked-warning__list {
+  margin: 8px 0 0 24px;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+/* Mobile width check */
+@media (max-width: 480px) {
+  .submit-blocked-warning {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+  .submit-blocked-warning__header {
+    font-size: 0.85rem;
+  }
+}

@@ -12,3 +12,8 @@
   color: #b45309;
   margin-top: 2px;
 }
+
+.field-highlight--missed {
+    border: 2px solid red;
+    white-space: nowrap;
+}

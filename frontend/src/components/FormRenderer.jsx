@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 
@@ -38,6 +38,11 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
   const [aiMissedFields, setAiMissedFields] = useState({});
   const [aiReviewFields, setAiReviewFields] = useState({});
   const [aiWarning, setAiWarning] = useState("");
+
+  // Day 18: fields the human has explicitly taken over (typed into, or hit
+  // "Not right?" on). Once claimed, NO later extraction may overwrite them —
+  // a manual correction always wins, no matter the source.
+  const humanEditedRef = useRef(new Set());
 
   const {
     register,
@@ -79,16 +84,18 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
 
     schema.fields.forEach((field) => {
       const fieldName = field.name || field.id;
-      const extractedValue = extractedData[fieldName];
+
+      // Day 18: a field the human edited is theirs for good — skip it
+      // silently: no overwrite, and no highlight either.
+      if (humanEditedRef.current.has(fieldName)) return;
+
+      const extraction = extractedData[fieldName];
+      const extractedValue = extraction?.value;
 
       // Only set fields the AI actually extracted a value for —
       // empty string = missed, false = unknown checkbox. Both are left
       // untouched for manual entry and flagged with the AI-missed highlight.
-      const isMissed =
-        extractedValue === undefined ||
-        extractedValue === null ||
-        extractedValue === "" ||
-        extractedValue === false;
+      const isMissed = extraction?.found !== true;
 
       if (isMissed) {
         missedNow[fieldName] = true;
@@ -115,10 +122,26 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
   // Day 17: any manual edit overrides the AI — clear both AI states for that
   // field so its highlight disappears as soon as the user starts typing.
   const handleUserChange = (fieldName, rhfOnChange) => (event) => {
+    humanEditedRef.current.add(fieldName);
     setAiMissedFields((prev) => clearFlag(prev, fieldName));
     setAiReviewFields((prev) => clearFlag(prev, fieldName));
     setAiWarning("");
     rhfOnChange(event);
+  };
+
+  // Day 18: "this doesn't look right" correction affordance. Clicking it
+  // claims the field for the human, drops the needs-review highlight
+  // immediately and focuses the input so the correct value can be typed
+  // straight away — no hunting for which field the ⚠️ belongs to.
+  const startCorrection = (fieldName) => {
+    humanEditedRef.current.add(fieldName);
+    setAiReviewFields((prev) => clearFlag(prev, fieldName));
+    setAiMissedFields((prev) => clearFlag(prev, fieldName));
+    setAiWarning("");
+    // Defer focus until after React commits: dropping the AI-state wrapper
+    // remounts the field's <input>, which would otherwise lose the focus
+    // set here. One tick later, the new node is what receives focus.
+    setTimeout(() => document.getElementById(fieldName)?.focus(), 0);
   };
 
   // Submit the filled-in form data to the backend for validation/storage.
@@ -275,7 +298,19 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
           return <AIMissedField key={fieldId}>{fieldNode}</AIMissedField>;
         }
         if (aiReviewFields[fieldId]) {
-          return <NeedsReviewField key={fieldId}>{fieldNode}</NeedsReviewField>;
+          // Day 18: needs-review fields get a one-click correction affordance.
+          return (
+            <NeedsReviewField key={fieldId}>
+              {fieldNode}
+              <button
+                type="button"
+                onClick={() => startCorrection(fieldId)}
+                className="mt-1 text-xs font-medium text-yellow-800 underline hover:no-underline bg-transparent border-0 cursor-pointer"
+              >
+                Not right? Fix it
+              </button>
+            </NeedsReviewField>
+          );
         }
         return <Fragment key={fieldId}>{fieldNode}</Fragment>;
       })}
