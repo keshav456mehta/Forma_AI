@@ -124,7 +124,7 @@ describe("FormRenderer", () => {
     });
     // Mock extraction endpoint to return hasInsurance: "Yes"
     axios.post.mockResolvedValue({
-      data: { hasInsurance: "Yes", insuranceCompany: "ICICI Lombard" },
+      data: { hasInsurance: { value: "Yes", found: true }, insuranceCompany: { value: "ICICI Lombard", found: true } },
     });
 
     render(<FormRenderer formId="form-id" />);
@@ -153,7 +153,7 @@ describe("FormRenderer", () => {
         fields: [{ name: "fullName", label: "Full Name", type: "text" }],
       },
     });
-    axios.post.mockResolvedValue({ data: { fullName: "Rajesh Kumar" } });
+    axios.post.mockResolvedValue({ data: { fullName: { value: "Rajesh Kumar", found: true } } });
 
     render(<FormRenderer formId="form-id" />);
     await screen.findByText("Basic Form");
@@ -192,7 +192,7 @@ describe("FormRenderer", () => {
     await screen.findByText("Basic Form");
 
     // First extraction fills only fullName; city comes back "" (missed)
-    axios.post.mockResolvedValueOnce({ data: { fullName: "Rajesh Kumar", city: "" } });
+    axios.post.mockResolvedValueOnce({ data: { fullName: { value: "Rajesh Kumar", found: true }, city: { value: "", found: false } } });
     await act(async () => {
       fireEvent.change(document.getElementById("magic-input"), {
         target: { value: "My name is Rajesh Kumar." },
@@ -207,7 +207,7 @@ describe("FormRenderer", () => {
 
     // Second extraction misses BOTH fields ("") — nothing already on screen
     // may be wiped
-    axios.post.mockResolvedValueOnce({ data: { fullName: "", city: "" } });
+    axios.post.mockResolvedValueOnce({ data: { fullName: { value: "", found: false }, city: { value: "", found: false } } });
     await act(async () => {
       fireEvent.change(document.getElementById("magic-input"), {
         target: { value: "something unrelated happened." },
@@ -237,7 +237,7 @@ describe("FormRenderer", () => {
     await screen.findByText("Basic Form");
 
     // Live extraction run with partial results: fullName extracted, city missed
-    axios.post.mockResolvedValueOnce({ data: { fullName: "Rajesh Kumar", city: "" } });
+    axios.post.mockResolvedValueOnce({ data: { fullName: { value: "Rajesh Kumar", found: true }, city: { value: "", found: false } } });
     await act(async () => {
       fireEvent.change(document.getElementById("magic-input"), {
         target: { value: "My name is Rajesh Kumar." },
@@ -275,7 +275,7 @@ describe("FormRenderer", () => {
     await screen.findByText("Claim Form");
 
     // Extraction misses the required field entirely
-    axios.post.mockResolvedValueOnce({ data: { incidentDate: "" } });
+    axios.post.mockResolvedValueOnce({ data: { incidentDate: { value: "", found: false } } });
     await act(async () => {
       fireEvent.change(document.getElementById("magic-input"), {
         target: { value: "something happened last week." },
@@ -330,7 +330,7 @@ describe("FormRenderer", () => {
     // Ambiguous run: AI extracts the brother's name as the owner — wrong,
     // but plausible, so it lands flagged for review
     axios.post.mockResolvedValueOnce({
-      data: { ownerName: "Amit Sharma", vehicleNumber: "DL9999" },
+      data: { ownerName: { value: "Amit Sharma", found: true }, vehicleNumber: { value: "DL9999", found: true } },
     });
     await act(async () => {
       fireEvent.change(document.getElementById("magic-input"), {
@@ -361,7 +361,7 @@ describe("FormRenderer", () => {
     // A later extraction returns a DIFFERENT non-empty ownerName — the human
     // correction must win ("manual overwrite always wins, no matter the source")
     axios.post.mockResolvedValueOnce({
-      data: { ownerName: "Someone Else Entirely", vehicleNumber: "" },
+      data: { ownerName: { value: "Someone Else Entirely", found: true }, vehicleNumber: { value: "", found: false } },
     });
     await act(async () => {
       fireEvent.change(document.getElementById("magic-input"), {
@@ -389,7 +389,7 @@ describe("FormRenderer", () => {
     render(<FormRenderer formId="form-id" />);
     await screen.findByText("Basic Form");
 
-    axios.post.mockResolvedValueOnce({ data: { fullName: "Rajesh Kumar" } });
+    axios.post.mockResolvedValueOnce({ data: { fullName: { value: "Rajesh Kumar", found: true } } });
     await act(async () => {
       fireEvent.change(document.getElementById("magic-input"), {
         target: { value: "My name is Rajesh Kumar." },
@@ -403,7 +403,7 @@ describe("FormRenderer", () => {
     });
 
     // Second extraction fills the SAME field with a different value
-    axios.post.mockResolvedValueOnce({ data: { fullName: "Wrong Person" } });
+    axios.post.mockResolvedValueOnce({ data: { fullName: { value: "Wrong Person", found: true } } });
     await act(async () => {
       fireEvent.change(document.getElementById("magic-input"), {
         target: { value: "a story about someone else." },

@@ -89,16 +89,13 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
       // silently: no overwrite, and no highlight either.
       if (humanEditedRef.current.has(fieldName)) return;
 
-      const extractedValue = extractedData[fieldName];
+      const extraction = extractedData[fieldName];
+      const extractedValue = extraction?.value;
 
       // Only set fields the AI actually extracted a value for —
       // empty string = missed, false = unknown checkbox. Both are left
       // untouched for manual entry and flagged with the AI-missed highlight.
-      const isMissed =
-        extractedValue === undefined ||
-        extractedValue === null ||
-        extractedValue === "" ||
-        extractedValue === false;
+      const isMissed = extraction?.found !== true;
 
       if (isMissed) {
         missedNow[fieldName] = true;

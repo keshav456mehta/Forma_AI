@@ -34,7 +34,7 @@ function emptyExtraction(fields) {
   return Object.fromEntries(
     schemaFields(fields).map((field) => [
       field.name,
-      field.type === "checkbox" ? false : "",
+      { value: field.type === "checkbox" ? false : "", found: false },
     ])
   );
 }
@@ -46,11 +46,13 @@ function cleanExtraction(value, fields) {
   const result = emptyExtraction(fields);
 
   for (const field of schemaFields(fields)) {
-    const valueForField = source[field.name];
+    const candidate = source[field.name];
+    const valueForField = candidate?.value;
+    const found = candidate?.found === true;
     if (typeof valueForField === "string") {
-      result[field.name] = valueForField.trim();
+      result[field.name] = { value: valueForField.trim(), found };
     } else if (field.type === "checkbox" && typeof valueForField === "boolean") {
-      result[field.name] = valueForField;
+      result[field.name] = { value: valueForField, found };
     }
   }
 
@@ -73,8 +75,8 @@ async function requestModelExtraction(client, story, fields, strict) {
         {
           role: "system",
           content: strict
-            ? `Return valid JSON only. No markdown, code fences, prose, or extra keys. Use exactly the field names in this schema: ${fieldInstructions}. Return an empty string (or false for checkboxes) when uncertain.`
-            : `Extract the story into the supplied form schema. Return a flat JSON object with exactly the schema field names. Include conditional fields too; use each field's showIf rule to understand its relationship to the controlling field. Never guess. Return an empty string for unknown text/select fields and false for unknown checkboxes. For select fields, use an exact option value when options are supplied. Schema: ${fieldInstructions}. Return JSON only, with no markdown or prose.`,
+            ? `Return valid JSON only. No markdown, code fences, prose, or extra keys. Use exactly the field names in this schema: ${fieldInstructions}. Each field must be {"value": string|boolean, "found": boolean}; set found false only when the story does not provide a value.`
+            : `Extract the story into the supplied form schema. Return a JSON object with exactly the schema field names. Every field value must be {"value": string|boolean, "found": boolean}. Set found false only when the story does not provide a value; use value "" for missing text/select fields and false for missing checkboxes. Include conditional fields too; use each field's showIf rule to understand its relationship to the controlling field. Never guess. For select fields, use an exact option value when options are supplied. Schema: ${fieldInstructions}. Return JSON only, with no markdown or prose.`,
         },
         {
           role: "user",
