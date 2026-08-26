@@ -19,18 +19,18 @@ describe("extractFromStory", () => {
     process.env.OPENAI_API_KEY = "test-key";
     const create = jest.fn().mockResolvedValue({
       choices: [{ message: { content: JSON.stringify({
-        incidentType: "animal_collision",
-        vehicle: "Honda",
-        damage: "windshield",
+        incidentType: { value: "animal_collision", found: true },
+        vehicle: { value: "Honda", found: true },
+        damage: { value: "windshield", found: true },
         ignored: "not returned",
       }) } }],
     });
     OpenAI.mockImplementation(() => ({ chat: { completions: { create } } }));
 
     await expect(extractFromStory("I hit a deer on I-95 yesterday in my Honda, and the windshield shattered.", fields)).resolves.toEqual({
-      incidentType: "animal_collision",
-      vehicle: "Honda",
-      damage: "windshield",
+      incidentType: { value: "animal_collision", found: true },
+      vehicle: { value: "Honda", found: true },
+      damage: { value: "windshield", found: true },
     });
 
     expect(create.mock.calls[0][0].messages[0].content).toContain("incidentType");
@@ -48,11 +48,11 @@ describe("extractFromStory", () => {
     process.env.OPENAI_API_KEY = "test-key";
     const create = jest.fn().mockResolvedValue({
       choices: [{ message: { content: JSON.stringify({
-        ownerName: "Raj Patel",
-        vehicleType: "Car",
-        vehicleCategory: "Sedan",
-        vehicleModel: "Honda City",
-        terms: true,
+        ownerName: { value: "Raj Patel", found: true },
+        vehicleType: { value: "Car", found: true },
+        vehicleCategory: { value: "Sedan", found: true },
+        vehicleModel: { value: "Honda City", found: true },
+        terms: { value: true, found: true },
         unexpected: "ignored",
       }) } }],
     });
@@ -62,11 +62,11 @@ describe("extractFromStory", () => {
       "Owner is Raj Patel. It's a Car. Category is Sedan. Model is Honda City. I confirm.",
       nestedFields
     )).resolves.toEqual({
-      ownerName: "Raj Patel",
-      vehicleType: "Car",
-      vehicleCategory: "Sedan",
-      vehicleModel: "Honda City",
-      terms: true,
+      ownerName: { value: "Raj Patel", found: true },
+      vehicleType: { value: "Car", found: true },
+      vehicleCategory: { value: "Sedan", found: true },
+      vehicleModel: { value: "Honda City", found: true },
+      terms: { value: true, found: true },
     });
 
     const prompt = create.mock.calls[0][0].messages[0].content;
@@ -75,12 +75,61 @@ describe("extractFromStory", () => {
     expect(prompt).toContain("vehicleType");
   });
 
+  test("marks ambiguous nested levels as not found without losing a clear parent", async () => {
+    const branchingFields = [
+      { name: "vehicleType", label: "Vehicle Type", type: "select", options: [{ value: "Car" }, { value: "Bike" }] },
+      { name: "vehicleCategory", label: "Vehicle Category", type: "select", showIf: { fieldId: "vehicleType", equals: "Car" } },
+      { name: "vehicleModel", label: "Vehicle Model", type: "text", showIf: { fieldId: "vehicleCategory", equals: "Sedan" } },
+    ];
+    process.env.OPENAI_API_KEY = "test-key";
+    const create = jest.fn().mockResolvedValue({
+      choices: [{ message: { content: JSON.stringify({
+        vehicleType: { value: "Car", found: true },
+        vehicleCategory: { value: "", found: false },
+        vehicleModel: { value: "", found: false },
+      }) } }],
+    });
+    OpenAI.mockImplementation(() => ({ chat: { completions: { create } } }));
+
+    await expect(extractFromStory(
+      "It is a car, but I do not know whether it is a sedan or SUV, and the model is unclear.",
+      branchingFields
+    )).resolves.toEqual({
+      vehicleType: { value: "Car", found: true },
+      vehicleCategory: { value: "", found: false },
+      vehicleModel: { value: "", found: false },
+    });
+
+    expect(create.mock.calls[0][0].messages[0].content).toContain("ambiguous");
+  });
+
   test("degrades gracefully for an incomplete story", async () => {
     await expect(extractFromStory("Something happened to my car.", fields))
       .resolves.toEqual({
-        incidentType: "",
-        vehicle: "",
-        damage: "",
+        incidentType: { value: "", found: false },
+        vehicle: { value: "", found: false },
+        damage: { value: "", found: false },
+      });
+  });
+
+  test("keeps found separate from an empty string or false checkbox value", async () => {
+    const fieldsWithCheckbox = [
+      { name: "notes", label: "Notes", type: "text" },
+      { name: "confirmed", label: "Confirmed", type: "checkbox" },
+    ];
+    process.env.OPENAI_API_KEY = "test-key";
+    const create = jest.fn().mockResolvedValue({
+      choices: [{ message: { content: JSON.stringify({
+        notes: { value: "", found: true },
+        confirmed: { value: false, found: true },
+      }) } }],
+    });
+    OpenAI.mockImplementation(() => ({ chat: { completions: { create } } }));
+
+    await expect(extractFromStory("No notes; not confirmed.", fieldsWithCheckbox))
+      .resolves.toEqual({
+        notes: { value: "", found: true },
+        confirmed: { value: false, found: true },
       });
   });
 
@@ -100,9 +149,9 @@ describe("extractFromStory", () => {
     }));
     await expect(extractFromStory("Something happened to my car.", fields))
       .resolves.toEqual({
-        incidentType: "",
-        vehicle: "",
-        damage: "",
+        incidentType: { value: "", found: false },
+        vehicle: { value: "", found: false },
+        damage: { value: "", found: false },
       });
 
     expect(create).toHaveBeenCalledTimes(2);
@@ -136,16 +185,16 @@ describe("extractFromStory", () => {
       .mockRejectedValueOnce(transientError)
       .mockRejectedValueOnce(transientError)
       .mockResolvedValueOnce({ choices: [{ message: { content: JSON.stringify({
-        incidentType: "collision",
-        vehicle: "Honda",
-        damage: "bumper",
+        incidentType: { value: "collision", found: true },
+        vehicle: { value: "Honda", found: true },
+        damage: { value: "bumper", found: true },
       }) } }] });
     OpenAI.mockImplementation(() => ({ chat: { completions: { create } } }));
 
     await expect(extractFromStory("A story", fields)).resolves.toEqual({
-      incidentType: "collision",
-      vehicle: "Honda",
-      damage: "bumper",
+      incidentType: { value: "collision", found: true },
+      vehicle: { value: "Honda", found: true },
+      damage: { value: "bumper", found: true },
     });
     expect(create).toHaveBeenCalledTimes(3);
   });
