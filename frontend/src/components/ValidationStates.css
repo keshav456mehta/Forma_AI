@@ -1,15 +1,18 @@
 /* ValidationStates.css */
 
 .field-wrapper {
-  margin-bottom: 16px;
-  padding: 8px;
-  border-radius: 6px;
+ display: flex;
+ align-items: center;
+ gap: 8px;
 }
 
 /* State 1: AI missed — dashed orange border */
 .field-wrapper.ai-missed {
-  border: 2px dashed #e07b00;
-  background-color: #fff6ec;
+  border: 2px solid red;
+  white-space: normal;
+  overflow-wrap: break-word;
+  min-height: 40px;
+
 }
 
 /* State 2: needs review — solid yellow border */
