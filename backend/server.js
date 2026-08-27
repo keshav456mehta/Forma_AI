@@ -13,6 +13,17 @@ const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
 app.use(cors());
 app.use(express.json());
 
+// Keep malformed JSON responses in the same public error contract as every
+// route-level validation failure. Express otherwise sends its default HTML
+// error document before requests reach a route handler.
+app.use((error, _req, res, next) => {
+  if (error instanceof SyntaxError && "body" in error) {
+    return res.status(400).json({ error: "Malformed JSON request body" });
+  }
+
+  return next(error);
+});
+
 app.get("/", (_req, res) => {
   res.json({ message: "server is running" });
 });
