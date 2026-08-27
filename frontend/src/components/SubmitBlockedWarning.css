@@ -10,10 +10,8 @@
 
 .submit-blocked-warning__header {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  font-size: 0.9rem;
+  flex-wrap: wrap;
+  padding: 12px;
 }
 
 .submit-blocked-warning__list {
@@ -24,9 +22,9 @@
 
 /* Mobile width check */
 @media (max-width: 480px) {
-  .submit-blocked-warning {
-    padding: 10px 12px;
-    font-size: 0.85rem;
+  .submit-blocked-warning__header {
+    flex-direction: column;
+    font-size: 13px;
   }
   .submit-blocked-warning__header {
     font-size: 0.85rem;
