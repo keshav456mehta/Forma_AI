@@ -45,7 +45,6 @@ router.post("/:id/extract", async (req, res) => {
     if (error instanceof ExtractionServiceError) {
       return res.status(error.kind === "rate_limit" ? 429 : 503).json({
         error: "Extraction service unavailable, please try again",
-        kind: error.kind,
       });
     }
 

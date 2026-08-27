@@ -26,7 +26,6 @@ async function getFormById(req, res) {
   } catch (error) {
     return res.status(500).json({
       error: "Failed to fetch form",
-      details: error.message,
     });
   }
 }
@@ -69,7 +68,6 @@ async function submitForm(req, res) {
   } catch (error) {
     return res.status(500).json({
       error: "Failed to validate submission",
-      details: error.message,
     });
   }
 }
