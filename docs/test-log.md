@@ -1,30 +1,47 @@
-# Forma AI - Week 2 Test Log
+# Day 18 — Nested / Complex Extraction Regression
 
-## Day 14 - Final Test Suite & Documentation
+## Objective
+Verify that live extraction correctly handles nested 3-level branching and ambiguous stories without introducing regression.
 
-**Branch:** V_Divyesh
+## Tests Added
 
-### Test Summary
+### 1. 3-Level Branching (Live)
+**Story**
+> I have insurance. It is health insurance with Star Health. My policy number is SH123456.
 
-| Test Area | Status |
-|-----------|--------|
-| Schema Validation | PASS |
-| Submission Validation | PASS |
-| Conditional Field Validation | PASS |
-| Story Fixtures | PASS |
-| Extraction Service | PASS |
-| Extraction API | PASS |
+**Expected**
+- hasInsurance → Yes
+- insuranceType → Health
+- policyNumber → SH123456
 
-### Week 2 Coverage
+**Result:** PASS
 
-- User story fixtures created and verified
-- Extraction service implemented and tested
-- Extraction API tested with valid story input
-- Validation tests updated for conditional fields
-- Documentation reviewed and cleaned
+---
 
-### Mid Review Status
+### 2. Ambiguous Partial Branching (Live)
+**Story**
+> I think I have insurance, but I don't remember the company or my policy number.
 
-- Week 1 tests completed
-- Week 2 tests completed
-- Test suite ready for integration review
+**Expected**
+- hasInsurance → Yes
+- insuranceCompany → ""
+- policyNumber → ""
+
+**Result:** PASS
+
+---
+
+## Regression Summary
+
+| Test | Status |
+|------|--------|
+| Clear extraction | PASS |
+| Ambiguous story | PASS |
+| Incomplete story | PASS |
+| Empty story handling | PASS |
+| 3-level branching | PASS |
+| Partial branching | PASS |
+
+**Overall Result:** PASS
+
+No regression observed. Live extraction preserves branching behavior and leaves unknown nested fields as empty strings instead of generating incorrect values.

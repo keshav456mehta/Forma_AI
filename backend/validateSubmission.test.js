@@ -43,7 +43,56 @@ describe("Required Field Validation", () => {
     ];
 
     expect(
-      validateRequiredFields(conditionalFields, { hasInsurance: "No" })
+      validateRequiredFields(conditionalFields, {
+        hasInsurance: "No",
+      })
     ).toEqual([]);
+  });
+});
+
+describe("Missed / Incorrect Field Coverage", () => {
+  test("flags AI-missed required fields", () => {
+    const aiSubmission = {
+      email: "user@mail.com",
+      terms: true,
+      // incidentType missed by AI
+    };
+
+    expect(validateRequiredFields(fields, aiSubmission)).toEqual([
+      "incidentType",
+    ]);
+  });
+
+  test("manual correction always overrides AI-filled value", () => {
+    const aiData = {
+      email: "user@mail.com",
+      incidentType: "Fire",
+      terms: true,
+    };
+
+    const manualData = {
+      incidentType: "Theft",
+    };
+
+    const finalSubmission = {
+      ...aiData,
+      ...manualData,
+    };
+
+    expect(finalSubmission.incidentType).toBe("Theft");
+    expect(validateRequiredFields(fields, finalSubmission)).toEqual([]);
+  });
+
+  test("ambiguous story reports missing fields correctly", () => {
+    const ambiguousSubmission = {
+      email: "user@mail.com",
+      notes: "Something happened yesterday.",
+      terms: true,
+      // AI couldn't determine incidentType
+    };
+
+    expect(validateRequiredFields(fields, ambiguousSubmission)).toEqual([
+      "incidentType",
+    ]);
   });
 });

@@ -14,24 +14,26 @@ Request body:
 
 ## Successful response
 
-The endpoint returns HTTP `200` with a flat JSON object. Its keys are **exactly**
-the `name` values from the requested form's stored `fields` schema; unknown model
-keys are removed. This makes the response directly usable as form values.
+The endpoint returns HTTP `200` with a JSON object whose keys are **exactly** the
+`name` values from the requested form's stored `fields` schema; unknown model
+keys are removed. Every field has the same wrapper shape:
 
-Value types are normalized as follows:
-
-| Form field type | Response value |
+| Property | Meaning |
 | --- | --- |
-| `checkbox` | boolean (`false` when unknown) |
-| all other field types | string (empty string when unknown) |
+| `value` | The normalized field value: a string for text/select fields or boolean for checkboxes. |
+| `found` | `true` only when the AI found a value in the story; `false` means the AI missed the field. |
+
+Clients must use `found` for AI-missed UI, not truthiness or an empty `value`.
+This preserves the distinction between a missing field and a genuine `""` or
+checkbox `false` value.
 
 For the current incident form, the response contract is:
 
 ```json
 {
-  "incidentType": "animal_collision",
-  "vehicle": "Honda",
-  "damage": "windshield"
+  "incidentType": { "value": "animal_collision", "found": true },
+  "vehicle": { "value": "Honda", "found": true },
+  "damage": { "value": "windshield", "found": true }
 }
 ```
 
@@ -39,9 +41,9 @@ An incomplete story still receives HTTP `200`; missing values use the defaults:
 
 ```json
 {
-  "incidentType": "",
-  "vehicle": "",
-  "damage": ""
+  "incidentType": { "value": "", "found": false },
+  "vehicle": { "value": "", "found": false },
+  "damage": { "value": "", "found": false }
 }
 ```
 
@@ -92,9 +94,10 @@ make slow live extractions visible without exposing user data.
 - Frontend wiring should consume the agreed extraction keys directly.
 
 `FormRenderer` should call this endpoint as the default, non-mock extraction
-path and merge the returned object directly into values for matching form field
-names. Consumers must not depend on extra keys or on a fixed incident-only
-schema; the stored form schema is authoritative.
+path and set a matching form value only when that field's `found` is `true`.
+When `found` is `false`, it should retain any manual value and show the
+AI-missed treatment. Consumers must not depend on extra keys or on a fixed
+incident-only schema; the stored form schema is authoritative.
 
 ---
 

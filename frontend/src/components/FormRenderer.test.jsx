@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, act } from "@testing-library/react";
+import { fireEvent, render, screen, act, waitFor, within } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import axios from "axios";
 import FormRenderer from "./FormRenderer";
@@ -124,7 +124,7 @@ describe("FormRenderer", () => {
     });
     // Mock extraction endpoint to return hasInsurance: "Yes"
     axios.post.mockResolvedValue({
-      data: { hasInsurance: "Yes", insuranceCompany: "ICICI Lombard" },
+      data: { hasInsurance: { value: "Yes", found: true }, insuranceCompany: { value: "ICICI Lombard", found: true } },
     });
 
     render(<FormRenderer formId="form-id" />);
@@ -153,7 +153,7 @@ describe("FormRenderer", () => {
         fields: [{ name: "fullName", label: "Full Name", type: "text" }],
       },
     });
-    axios.post.mockResolvedValue({ data: { fullName: "Rajesh Kumar" } });
+    axios.post.mockResolvedValue({ data: { fullName: { value: "Rajesh Kumar", found: true } } });
 
     render(<FormRenderer formId="form-id" />);
     await screen.findByText("Basic Form");
@@ -192,7 +192,7 @@ describe("FormRenderer", () => {
     await screen.findByText("Basic Form");
 
     // First extraction fills only fullName; city comes back "" (missed)
-    axios.post.mockResolvedValueOnce({ data: { fullName: "Rajesh Kumar", city: "" } });
+    axios.post.mockResolvedValueOnce({ data: { fullName: { value: "Rajesh Kumar", found: true }, city: { value: "", found: false } } });
     await act(async () => {
       fireEvent.change(document.getElementById("magic-input"), {
         target: { value: "My name is Rajesh Kumar." },
@@ -207,7 +207,7 @@ describe("FormRenderer", () => {
 
     // Second extraction misses BOTH fields ("") — nothing already on screen
     // may be wiped
-    axios.post.mockResolvedValueOnce({ data: { fullName: "", city: "" } });
+    axios.post.mockResolvedValueOnce({ data: { fullName: { value: "", found: false }, city: { value: "", found: false } } });
     await act(async () => {
       fireEvent.change(document.getElementById("magic-input"), {
         target: { value: "something unrelated happened." },
@@ -237,7 +237,7 @@ describe("FormRenderer", () => {
     await screen.findByText("Basic Form");
 
     // Live extraction run with partial results: fullName extracted, city missed
-    axios.post.mockResolvedValueOnce({ data: { fullName: "Rajesh Kumar", city: "" } });
+    axios.post.mockResolvedValueOnce({ data: { fullName: { value: "Rajesh Kumar", found: true }, city: { value: "", found: false } } });
     await act(async () => {
       fireEvent.change(document.getElementById("magic-input"), {
         target: { value: "My name is Rajesh Kumar." },
@@ -275,7 +275,7 @@ describe("FormRenderer", () => {
     await screen.findByText("Claim Form");
 
     // Extraction misses the required field entirely
-    axios.post.mockResolvedValueOnce({ data: { incidentDate: "" } });
+    axios.post.mockResolvedValueOnce({ data: { incidentDate: { value: "", found: false } } });
     await act(async () => {
       fireEvent.change(document.getElementById("magic-input"), {
         target: { value: "something happened last week." },
@@ -307,5 +307,110 @@ describe("FormRenderer", () => {
       "http://localhost:5000/api/forms/form-id/submit",
       { incidentDate: "2026-08-20" }
     );
+  });
+
+  // Day 18: ambiguous story fixture (Member 5's set, extended) — the AI fills
+  // a plausible-but-wrong owner (the BROTHER's name). The needs-review
+  // highlight must appear, the "Not right? Fix it" affordance must claim the
+  // field, and once corrected NO later re-extraction may overwrite it.
+  it("lets the user correct an AI-filled value that survives later re-extractions", async () => {
+    axios.get.mockResolvedValue({
+      data: {
+        title: "Vehicle Registration",
+        fields: [
+          { name: "ownerName", label: "Owner Name", type: "text" },
+          { name: "vehicleNumber", label: "Vehicle Number", type: "text" },
+        ],
+      },
+    });
+
+    render(<FormRenderer formId="form-id" />);
+    await screen.findByText("Vehicle Registration");
+
+    // Ambiguous run: AI extracts the brother's name as the owner — wrong,
+    // but plausible, so it lands flagged for review
+    axios.post.mockResolvedValueOnce({
+      data: { ownerName: { value: "Amit Sharma", found: true }, vehicleNumber: { value: "DL9999", found: true } },
+    });
+    await act(async () => {
+      fireEvent.change(document.getElementById("magic-input"), {
+        target: { value: "My brother Amit Sharma owns the car I'm registering." },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /auto-fill/i }));
+    });
+
+    // Both AI-filled fields carry the ⚠️ needs-review highlight
+    const reviewMessages = await screen.findAllByText(/Please double-check this value/);
+    expect(reviewMessages).toHaveLength(2);
+
+    // One-click correction affordance on the OWNER field claims it and
+    // focuses the input (scoping via its wrapper — two buttons exist)
+    const ownerWrapper = reviewMessages[0].closest(".field-wrapper");
+    fireEvent.click(
+      within(ownerWrapper).getByRole("button", { name: /not right\? fix it/i })
+    );
+    expect(screen.getAllByText(/Please double-check this value/)).toHaveLength(1);
+    // Focus lands on the NEW input node (the wrapper swap remounts it)
+    await waitFor(() => expect(screen.getByLabelText(/Owner Name/)).toHaveFocus());
+
+    // User types the correct owner
+    fireEvent.change(screen.getByLabelText(/Owner Name/), {
+      target: { value: "Raj Patel" },
+    });
+
+    // A later extraction returns a DIFFERENT non-empty ownerName — the human
+    // correction must win ("manual overwrite always wins, no matter the source")
+    axios.post.mockResolvedValueOnce({
+      data: { ownerName: { value: "Someone Else Entirely", found: true }, vehicleNumber: { value: "", found: false } },
+    });
+    await act(async () => {
+      fireEvent.change(document.getElementById("magic-input"), {
+        target: { value: "another story mentioning a different person entirely." },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /auto-fill/i }));
+    });
+
+    expect(screen.getByLabelText(/Owner Name/)).toHaveValue("Raj Patel");
+    // The unclaimed field was missed this round → ❓ comes back for IT only;
+    // no needs-review re-flag on the human-owned field
+    expect(screen.getByText(/AI couldn't find this/)).toBeInTheDocument();
+    expect(screen.queryByText(/Please double-check this value/)).not.toBeInTheDocument();
+  });
+
+  // Day 18: plain typing (no affordance click) protects the field too.
+  it("keeps manually-typed values when a later extraction returns different values", async () => {
+    axios.get.mockResolvedValue({
+      data: {
+        title: "Basic Form",
+        fields: [{ name: "fullName", label: "Full Name", type: "text" }],
+      },
+    });
+
+    render(<FormRenderer formId="form-id" />);
+    await screen.findByText("Basic Form");
+
+    axios.post.mockResolvedValueOnce({ data: { fullName: { value: "Rajesh Kumar", found: true } } });
+    await act(async () => {
+      fireEvent.change(document.getElementById("magic-input"), {
+        target: { value: "My name is Rajesh Kumar." },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /auto-fill/i }));
+    });
+
+    // User edits the AI-filled value by typing over it
+    fireEvent.change(await screen.findByLabelText(/Full Name/), {
+      target: { value: "Keshav Mehta" },
+    });
+
+    // Second extraction fills the SAME field with a different value
+    axios.post.mockResolvedValueOnce({ data: { fullName: { value: "Wrong Person", found: true } } });
+    await act(async () => {
+      fireEvent.change(document.getElementById("magic-input"), {
+        target: { value: "a story about someone else." },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /auto-fill/i }));
+    });
+
+    expect(screen.getByLabelText(/Full Name/)).toHaveValue("Keshav Mehta");
   });
 });

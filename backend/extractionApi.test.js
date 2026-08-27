@@ -4,8 +4,8 @@ const stories = require("../fixtures/stories");
 const API_URL =
   process.env.API_URL || "http://localhost:5000/api/forms";
 
-// These checks require an already-running API and a seeded form. Keep them
-// opt-in so the normal unit suite remains deterministic and offline.
+// These checks require an already-running API and a seeded form.
+// Keep them opt-in so the normal unit suite remains deterministic.
 const describeLiveApi = process.env.API_URL ? describe : describe.skip;
 
 const formId =
@@ -114,14 +114,68 @@ describeLiveApi("LLM Extraction API", () => {
         }
       );
 
-      // Either successful empty extraction or a controlled 400 is acceptable.
       expect([200, 400]).toContain(response.status);
       expect(response.data).toBeDefined();
     } catch (error) {
-      // A validation error is acceptable; a server crash is not.
       expect(error.response).toBeDefined();
       expect(error.response.status).toBe(400);
       expect(error.response.data).toBeDefined();
     }
+  });
+
+  // ----------------------------
+  // Day 18 Regression Tests
+  // ----------------------------
+
+  test("extracts values through a 3-level branching chain", async () => {
+    const response = await axios.post(
+      `${API_URL}/${formId}/extract`,
+      {
+        story:
+          "I have insurance. It is health insurance with Star Health. My policy number is SH123456.",
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.data).toBeDefined();
+
+    // Level 1
+    expect(response.data.hasInsurance).toBe("Yes");
+
+    // Level 2
+    expect(response.data.insuranceType).toBe("Health");
+
+    // Level 3
+    expect(response.data.policyNumber).toBe("SH123456");
+  });
+
+  test("partially extracts an ambiguous branching story without hallucinating deeper fields", async () => {
+    const response = await axios.post(
+      `${API_URL}/${formId}/extract`,
+      {
+        story:
+          "I think I have insurance, but I don't remember the company or my policy number.",
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.data).toBeDefined();
+
+    // First branch recognized
+    expect(response.data.hasInsurance).toBe("Yes");
+
+    // Unknown deeper fields remain empty
+    expect(response.data.insuranceCompany).toBe("");
+    expect(response.data.policyNumber).toBe("");
   });
 });
