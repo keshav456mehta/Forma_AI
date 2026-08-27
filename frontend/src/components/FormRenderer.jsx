@@ -76,6 +76,20 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
   // couldn't extract, false for unknown checkboxes. Because misses come back
   // as "" (not undefined), we skip empty/false values so a re-extraction
   // never wipes values the user already typed manually.
+  // Day 20: support both live flat format ({ fullName: "Raj" }) and the
+  // nested format Praveen designed for ambiguous/extractions ({ fullName: { value: "Raj", found: true } }).
+  const getExtraction = (data, fieldName) => {
+    const raw = data?.[fieldName];
+    if (raw && typeof raw === "object" && "value" in raw && "found" in raw) {
+      return { value: raw.value, found: raw.found === true };
+    }
+    // Flat live format: anything truthy/non-empty/non-false = found; misses = "" / false / undefined / null
+    if (raw === undefined || raw === null || raw === "" || raw === false) {
+      return { value: raw, found: false };
+    }
+    return { value: raw, found: true };
+  };
+
   const applyExtractedData = (extractedData) => {
     if (!extractedData || !schema?.fields) return;
 
@@ -89,32 +103,22 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
       // silently: no overwrite, and no highlight either.
       if (humanEditedRef.current.has(fieldName)) return;
 
-      const extraction = extractedData[fieldName];
-      const extractedValue = extraction?.value;
+      const { value: extractedValue, found } = getExtraction(extractedData, fieldName);
 
       // Only set fields the AI actually extracted a value for —
-      // empty string = missed, false = unknown checkbox. Both are left
-      // untouched for manual entry and flagged with the AI-missed highlight.
-      const isMissed = extraction?.found !== true;
-
-      if (isMissed) {
+      // empty string / false = missed; both get the AI-missed highlight.
+      if (!found) {
         missedNow[fieldName] = true;
         return;
       }
 
-      // shouldDirty: true is required so watch() picks up the programmatic
-      // change and triggers a re-render — without it, showIf conditions
-      // won't react to AI-populated values (Day 11 fix).
       setValue(fieldName, extractedValue, {
         shouldValidate: true,
         shouldDirty: true,
       });
-
-      // AI-filled: keep until a human confirms by editing the field.
       reviewNow[fieldName] = true;
     });
 
-    // A new extraction replaces the previous AI states wholesale.
     setAiMissedFields(missedNow);
     setAiReviewFields(reviewNow);
   };
