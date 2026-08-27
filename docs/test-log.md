@@ -45,3 +45,34 @@ Verify that live extraction correctly handles nested 3-level branching and ambig
 **Overall Result:** PASS
 
 No regression observed. Live extraction preserves branching behavior and leaves unknown nested fields as empty strings instead of generating incorrect values.
+# Day 19 — Full Regression Suite
+
+## Scope
+Executed the complete Week 1, Week 2, and Week 3 automated regression suite.
+
+## Results
+
+| Suite | Result |
+|--------|--------|
+| validateSchema | PASS |
+| validateSubmission | PASS |
+| extractionService | PASS |
+| extractionApi | SKIPPED* |
+| FormRenderer | PASS |
+| MagicInput | PASS |
+
+* Live extraction tests are intentionally skipped unless `API_URL` is configured and the backend is running.
+
+## Execution Summary
+- Backend: 20 passed, 7 skipped
+- Frontend: 18 passed
+- Overall: 38 passed, 0 failed
+
+## Punch-list
+- MongoDB local authentication is still an environment issue; the extraction API starts without MongoDB.
+- Live extraction regression tests require `API_URL` and a running backend server.
+- No functional regressions found across Week 1–3.
+
+## Overall Result
+
+PASS — Full Week 1–3 regression suite validated successfully.
