@@ -254,3 +254,51 @@ The schema documentation, merged code, and seed data are consistent
 after the Week 3 merge.
 
 No schema-side drift remains that would block Member 1's integration.
+
+The schema documentation was updated and reviewed against the Week 3
+live extraction and integration work.
+
+The documented schema now covers:
+
+- Live extraction response field names and value types.
+- Extraction-to-form field mapping.
+- Conditional field support.
+- Field alias coverage based on extraction testing.
+- AI-filled versus manually-edited field handling.
+- Manual correction precedence over AI-filled values.
+- Schema consistency checks performed after the Week 3 merge.
+- Seeded form and branching schema compatibility.
+
+### Known Extraction Limitations
+
+The extraction service may still have limitations with ambiguous or
+incomplete natural-language input.
+
+Known limitations include:
+
+- `incidentType` may require review when the story is ambiguous.
+- `damage` descriptions may vary depending on how the user describes
+  the damage.
+- Missing information should not be guessed by the extraction model.
+- Alias coverage cannot guarantee correct extraction for every possible
+  phrasing.
+- Low-confidence or ambiguous values may require manual review.
+
+### Week 3 Checkpoint
+
+The schema documentation is ready to be shared at the Week 3 checkpoint.
+It reflects the documented schema changes and integration guidance
+through Week 3.
+
+### Week 4 Schema Planning
+
+The initial Week 4 schema discussion should focus on draft/save state
+support.
+
+The schema should be reviewed with Member 3 to determine whether draft
+and saved form state requires additional persisted metadata, such as:
+
+- Draft status.
+- Saved field values.
+- Last updated state.
+- AI-filled versus manually-edited value ownership.
