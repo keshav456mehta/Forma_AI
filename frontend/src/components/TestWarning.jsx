@@ -1,6 +1,5 @@
 // src/TestWarning.jsx
-import SubmitBlockedWarning from "./components/SubmitBlockedWarning";
-
+import SubmitBlockedWarning from "./SubmitBlockedWarning";
 export default function TestWarning() {
   return (
     <div style={{ padding: "40px" }}>

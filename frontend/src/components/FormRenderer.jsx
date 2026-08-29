@@ -25,11 +25,11 @@ function shouldShowField(field, watchedValues) {
   return watchedValues?.[fieldId] === equals;
 }
 
-function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
-  const [schema, setSchema] = useState(null);
+function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {  const [schema, setSchema] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submissionStatus, setSubmissionStatus] = useState("");
+  const [draftStatus, setDraftStatus] = useState("");
 
   // Day 17: AI-validation UI state, keyed by field name.
   //   aiMissedFields — the latest extraction couldn't fill these (need human entry)
@@ -49,6 +49,7 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
     handleSubmit,
     watch,
     setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm();
 
@@ -146,6 +147,29 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
     // remounts the field's <input>, which would otherwise lose the focus
     // set here. One tick later, the new node is what receives focus.
     setTimeout(() => document.getElementById(fieldName)?.focus(), 0);
+  };
+
+  // Day 22: stub for saving a partially-filled form as a draft. Serializes
+  // the current react-hook-form state so it can be persisted; the real
+  // POST to the save-draft endpoint lands on Day 23.
+  const handleSaveDraft = () => {
+    const currentValues = getValues();
+    const draftPayload = {
+      formId,
+      values: currentValues,
+      savedAt: new Date().toISOString(),
+    };
+
+    try {
+      const serialized = JSON.stringify(draftPayload);
+      console.log("Draft ready to save:", serialized);
+      setDraftStatus("Draft ready (not yet saved to server)");
+    } catch (err) {
+      console.error("Failed to serialize form state:", err);
+      setDraftStatus("Could not prepare draft — see console.");
+    }
+
+    return draftPayload;
   };
 
   // Submit the filled-in form data to the backend for validation/storage.
@@ -327,6 +351,15 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
         {isSubmitting ? "Submitting..." : "Submit"}
       </button>
 
+      {/* Day 22: stub save-draft action, serializes current form state */}
+      <button
+        type="button"
+        onClick={handleSaveDraft}
+        className="ml-2 px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50"
+      >
+        Save Draft
+      </button>
+
       {/* Day 17: explicit warning when submission is blocked because required
           fields the AI missed are still empty. */}
       {aiWarning && (
@@ -338,6 +371,12 @@ function FormRenderer({ formId = "6a7ac008bb3e76cb84c1dc72" }) {
       {submissionStatus && (
         <p role="status" className="mt-4 text-green-600">
           {submissionStatus}
+        </p>
+      )}
+
+      {draftStatus && (
+        <p role="status" className="mt-2 text-blue-600 text-sm">
+          {draftStatus}
         </p>
       )}
 
