@@ -1,8 +1,7 @@
 ﻿import FormRenderer from "./components/FormRenderer";
 import TestExtractionPage from "./pages/TestExtractionPage";
 import TestField from "./TestField";
-import TestWarning from "./TestWarning";
-
+import TestWarning from "./components/TestWarning";
 
 function App() {
   const showTestPage =
