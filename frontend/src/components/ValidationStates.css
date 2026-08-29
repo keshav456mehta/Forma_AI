@@ -1,38 +1,56 @@
 /* ValidationStates.css */
 
 .field-wrapper {
- display: flex;
- align-items: center;
- gap: 8px;
+  display: block;
+  width: 100%;
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.625rem 0.375rem;
+  border-radius: 0.75rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* State 1: AI missed — dashed orange border */
+.field-wrapper > * {
+  width: 100%;
+}
+
+/* State 1: AI missed — warm amber fill with a subtle red border */
 .field-wrapper.ai-missed {
-  border: 2px solid red;
-  white-space: normal;
-  overflow-wrap: break-word;
-  min-height: 40px;
-
+  border: 1px solid #fca5a5;
+  background: #fff7ed;
+  box-shadow: inset 0 0 0 1px rgba(251, 146, 60, 0.08);
 }
 
-/* State 2: needs review — solid yellow border */
+/* State 2: needs review — soft yellow warning band */
 .field-wrapper.needs-review {
-  border: 2px solid #d4a600;
-  background-color: #fffbe6;
+  border: 1px solid #facc15;
+  background: #fffdf0;
+  box-shadow: inset 0 0 0 1px rgba(202, 138, 4, 0.08);
 }
 
 .field-message {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  margin-top: 4px;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  margin-top: 0.35rem;
+  padding: 0.2rem 0.1rem 0.1rem;
 }
 
 .missed-message {
-  color: #b35c00;
+  color: #b45309;
 }
 
 .review-message {
-  color: #a17d00;
+  color: #a16207;
+}
+
+@media (max-width: 480px) {
+  .field-wrapper {
+    padding: 0.5rem 0.5rem 0.325rem;
+  }
+
+  .field-message {
+    font-size: 0.7rem;
+  }
 }
