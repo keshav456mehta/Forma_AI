@@ -1,0 +1,16 @@
+{
+  "name": "Forma_AI_Project",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "test:backend": "npm --prefix Forma_AI/backend test",
+    "test:frontend": "npm --prefix Forma_AI/frontend test",
+    "test:api": "node Forma_AI/backend/testApi.js",
+    "test:all": "npm run test:backend && npm run test:frontend && npm run test:api",
+    "dev": "npm --prefix Forma_AI/frontend run dev",
+    "start": "concurrently \"npm --prefix Forma_AI/backend run dev\" \"npm --prefix Forma_AI/frontend run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.4"
+  }
+}
