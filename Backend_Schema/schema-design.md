@@ -302,3 +302,32 @@ and saved form state requires additional persisted metadata, such as:
 - Saved field values.
 - Last updated state.
 - AI-filled versus manually-edited value ownership.
+
+### Purpose
+
+A draft represents a partially completed form that can be saved and
+resumed later without requiring final form submission validation.
+
+### Draft Schema
+
+A draft should contain:
+
+| Field | Type | Purpose |
+|---|---|---|
+| `formId` | string | Identifies the form being saved |
+| `partialValues` | object | Contains the field values entered so far |
+| `savedAt` | string | Timestamp when the draft was saved |
+| `resumeToken` | string | Token used to resume the saved draft |
+
+### Example
+
+```json
+{
+  "formId": "form-123",
+  "partialValues": {
+    "vehicle": "Honda",
+    "damage": "windshield"
+  },
+  "savedAt": "2026-08-29T21:00:00Z",
+  "resumeToken": "resume-token-example"
+}
