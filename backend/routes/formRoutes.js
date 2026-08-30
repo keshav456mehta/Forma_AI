@@ -14,9 +14,9 @@ const router = express.Router();
 router.get("/:id", getFormById);
 router.post("/:id/submit", submitForm);
 
-// Day 23: save partial form state as a draft; Day 24 will add resume.
+// Save a partial form and resume it later with the returned opaque token.
 router.post("/:id/draft", saveDraft);
-router.get("/draft/:draftId", getDraft);
+router.get("/draft/:resumeToken", getDraft);
 
 /**
  * Turn a free-form story into a form submission using the form's own schema.

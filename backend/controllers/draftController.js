@@ -1,10 +1,10 @@
 const mongoose = require("mongoose");
+const { randomUUID } = require("crypto");
 const Form = require("../models/Form");
 const Draft = require("../models/Draft");
 
-// Day 23: save a partially-filled form's current state so it can be
-// resumed later. Stores a snapshot tied to the form's id; returns the
-// draft's own id so the frontend can use it as a resume token/link.
+// Save a partially-filled form snapshot that can later be resumed using a
+// non-sequential, public-safe token instead of exposing the database id.
 async function saveDraft(req, res) {
   const { id } = req.params;
   const values = req.body?.values;
@@ -33,12 +33,13 @@ async function saveDraft(req, res) {
     const draft = await Draft.create({
       formId: id,
       values,
+      resumeToken: randomUUID(),
     });
 
     return res.status(201).json({
       message: "Draft saved",
-      draftId: draft._id,
       savedAt: draft.createdAt,
+      resumeToken: draft.resumeToken,
     });
   } catch (error) {
     return res.status(500).json({
@@ -47,19 +48,18 @@ async function saveDraft(req, res) {
   }
 }
 
-// Day 24 will use this to resume a draft; included now so Day 23's save
-// flow has a matching read path to verify against.
+// Resume drafts by their public token, not their internal MongoDB id.
 async function getDraft(req, res) {
-  const { draftId } = req.params;
+  const { resumeToken } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(draftId)) {
+  if (typeof resumeToken !== "string" || !resumeToken.trim()) {
     return res.status(400).json({
-      error: "Invalid draft ID",
+      error: "resumeToken is required",
     });
   }
 
   try {
-    const draft = await Draft.findById(draftId).lean();
+    const draft = await Draft.findOne({ resumeToken }).lean();
 
     if (!draft) {
       return res.status(404).json({
