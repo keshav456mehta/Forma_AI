@@ -11,6 +11,12 @@ const draftSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       default: {},
     },
+    resumeToken: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
   },
   {
     timestamps: true,
