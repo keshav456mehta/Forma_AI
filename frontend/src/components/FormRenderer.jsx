@@ -25,11 +25,14 @@ function shouldShowField(field, watchedValues) {
   return watchedValues?.[fieldId] === equals;
 }
 
-function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {  const [schema, setSchema] = useState(null);
+function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
+  const [schema, setSchema] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submissionStatus, setSubmissionStatus] = useState("");
   const [draftStatus, setDraftStatus] = useState("");
+  const [draftId, setDraftId] = useState(null);
+  const [savingDraft, setSavingDraft] = useState(false);
 
   // Day 17: AI-validation UI state, keyed by field name.
   //   aiMissedFields — the latest extraction couldn't fill these (need human entry)
@@ -149,27 +152,29 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {  const [schema,
     setTimeout(() => document.getElementById(fieldName)?.focus(), 0);
   };
 
-  // Day 22: stub for saving a partially-filled form as a draft. Serializes
-  // the current react-hook-form state so it can be persisted; the real
-  // POST to the save-draft endpoint lands on Day 23.
-  const handleSaveDraft = () => {
+  // Day 23: POSTs the current form state to the real save-draft endpoint.
+  // On success, stores the returned draftId so a resume link/flow (Day 24)
+  // can use it later.
+  const handleSaveDraft = async () => {
     const currentValues = getValues();
-    const draftPayload = {
-      formId,
-      values: currentValues,
-      savedAt: new Date().toISOString(),
-    };
+    setSavingDraft(true);
+    setDraftStatus("Saving draft...");
 
     try {
-      const serialized = JSON.stringify(draftPayload);
-      console.log("Draft ready to save:", serialized);
-      setDraftStatus("Draft ready (not yet saved to server)");
-    } catch (err) {
-      console.error("Failed to serialize form state:", err);
-      setDraftStatus("Could not prepare draft — see console.");
-    }
+      const response = await axios.post(
+        `http://localhost:5000/api/forms/${formId}/draft`,
+        { values: currentValues }
+      );
 
-    return draftPayload;
+      setDraftId(response.data.draftId);
+      setDraftStatus(`Draft saved (ID: ${response.data.draftId})`);
+    } catch (err) {
+      const message =
+        err.response?.data?.error || "Failed to save draft. Please try again.";
+      setDraftStatus(message);
+    } finally {
+      setSavingDraft(false);
+    }
   };
 
   // Submit the filled-in form data to the backend for validation/storage.
@@ -351,13 +356,14 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {  const [schema,
         {isSubmitting ? "Submitting..." : "Submit"}
       </button>
 
-      {/* Day 22: stub save-draft action, serializes current form state */}
+      {/* Day 23: save-draft action now posts to the real backend endpoint */}
       <button
         type="button"
         onClick={handleSaveDraft}
-        className="ml-2 px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50"
+        disabled={savingDraft}
+        className="ml-2 px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 disabled:opacity-50"
       >
-        Save Draft
+        {savingDraft ? "Saving..." : "Save Draft"}
       </button>
 
       {/* Day 17: explicit warning when submission is blocked because required

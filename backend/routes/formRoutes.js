@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const { getFormById, submitForm } = require("../controllers/formController");
+const { saveDraft, getDraft } = require("../controllers/draftController");
 const Form = require("../models/Form");
 const {
   extractFromStory,
@@ -12,6 +13,10 @@ const router = express.Router();
 // Keep the public form API grouped under /api/forms in server.js.
 router.get("/:id", getFormById);
 router.post("/:id/submit", submitForm);
+
+// Day 23: save partial form state as a draft; Day 24 will add resume.
+router.post("/:id/draft", saveDraft);
+router.get("/draft/:draftId", getDraft);
 
 /**
  * Turn a free-form story into a form submission using the form's own schema.
