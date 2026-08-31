@@ -16,7 +16,7 @@ router.post("/:id/submit", submitForm);
 
 // Save a partial form and resume it later with the returned opaque token.
 router.post("/:id/draft", saveDraft);
-router.get("/draft/:resumeToken", getDraft);
+router.get("/:id/draft/:resumeToken", getDraft);
 
 /**
  * Turn a free-form story into a form submission using the form's own schema.

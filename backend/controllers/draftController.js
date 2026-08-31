@@ -50,16 +50,22 @@ async function saveDraft(req, res) {
 
 // Resume drafts by their public token, not their internal MongoDB id.
 async function getDraft(req, res) {
-  const { resumeToken } = req.params;
+  const { id, resumeToken } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(404).json({
+      error: "Draft not found",
+    });
+  }
 
   if (typeof resumeToken !== "string" || !resumeToken.trim()) {
-    return res.status(400).json({
-      error: "resumeToken is required",
+    return res.status(404).json({
+      error: "Draft not found",
     });
   }
 
   try {
-    const draft = await Draft.findOne({ resumeToken }).lean();
+    const draft = await Draft.findOne({ formId: id, resumeToken }).lean();
 
     if (!draft) {
       return res.status(404).json({
