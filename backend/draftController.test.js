@@ -46,10 +46,29 @@ describe("draft API controller", () => {
     Draft.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(draft) });
     const response = responseRecorder();
 
-    await getDraft({ params: { resumeToken: "resume-token" } }, response);
+    await getDraft({ params: { id: formId, resumeToken: "resume-token" } }, response);
 
-    expect(Draft.findOne).toHaveBeenCalledWith({ resumeToken: "resume-token" });
+    expect(Draft.findOne).toHaveBeenCalledWith({ formId, resumeToken: "resume-token" });
     expect(response.status).toHaveBeenCalledWith(200);
     expect(response.json).toHaveBeenCalledWith(draft);
+  });
+
+  test("returns 404 when a resume token is invalid or expired", async () => {
+    Draft.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
+    const response = responseRecorder();
+
+    await getDraft({ params: { id: formId, resumeToken: "expired-token" } }, response);
+
+    expect(response.status).toHaveBeenCalledWith(404);
+    expect(response.json).toHaveBeenCalledWith({ error: "Draft not found" });
+  });
+
+  test("returns 404 when a resume token is malformed", async () => {
+    const response = responseRecorder();
+
+    await getDraft({ params: { id: formId, resumeToken: " " } }, response);
+
+    expect(response.status).toHaveBeenCalledWith(404);
+    expect(response.json).toHaveBeenCalledWith({ error: "Draft not found" });
   });
 });
