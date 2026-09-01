@@ -2,7 +2,9 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
+
 const formRoutes = require("./routes/formRoutes");
+const draftRoutes = require("./routes/draftRoutes");
 
 dotenv.config();
 
@@ -18,6 +20,7 @@ app.get("/", (_req, res) => {
 });
 
 app.use("/api/forms", formRoutes);
+app.use("/api/drafts", draftRoutes);
 
 async function startServer() {
   if (!MONGODB_URI) {

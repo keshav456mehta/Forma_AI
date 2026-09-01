@@ -373,3 +373,58 @@ The schema is documented ahead of the backend save-draft route.
 Member 3 should use this documented shape when implementing the
 save-draft endpoint, and any implementation-specific naming or
 shape changes should be synchronized back into this document.
+
+## Day 24 — Resume Data Integrity and Schema Drift
+
+### Resume Data Integrity
+
+A saved draft must be reconstructed using the current form schema.
+Saved `partialValues` are matched by field `name` so that values continue
+to populate the corresponding fields when the schema has not changed.
+
+### Unchanged Schema
+
+When the form schema is unchanged after a draft is saved:
+
+1. Load the draft using its `resumeToken`.
+2. Load the current form schema using `formId`.
+3. Match saved values against current field names.
+4. Restore matching values into the form.
+5. Recompute conditional `showIf` state from the restored values.
+
+Values should therefore resume cleanly without changing their meaning.
+
+### Schema Drift
+
+A draft may outlive the version of the form schema that was used when it
+was created. Examples include:
+
+- A saved field was renamed.
+- A saved field was removed.
+- A new field was added.
+- A field's type or conditional rule changed.
+
+### Chosen Handling
+
+The current approach is to treat the current stored form schema as
+authoritative.
+
+When a draft is resumed:
+
+- Values whose field names still exist in the current schema are restored.
+- Values for fields no longer present in the current schema are ignored.
+- Newly added fields use their normal empty/default state.
+- Conditional visibility is recalculated using the current schema and
+  restored values.
+- Final validation is applied only when the user submits the form.
+
+This prevents obsolete draft data from being applied to fields that no
+longer exist while preserving compatible saved values.
+
+### Integration Finding
+
+The resume flow should therefore map draft values by current schema field
+names rather than relying on a fixed form shape.
+
+These findings should be shared with Member 1 for the resume-flow frontend
+implementation.
