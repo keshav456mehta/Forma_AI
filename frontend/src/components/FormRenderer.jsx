@@ -6,7 +6,9 @@ import TextField from "./TextField";
 import Checkbox from "./Checkbox";
 import Dropdown from "./DropDown";
 import MagicInput from "./MagicInput";
-import { AIMissedField, NeedsReviewField } from "./ValidationStates";
+import { AIMissedField, NeedsReviewField, FieldWrapper } from "./ValidationStates";
+import ResumeDraftEntry from "./ResumeDraftEntry";
+import SaveResumeLoading from "./SaveResumeLoading";
 
 // Day 17: drop a single key out of an AI-state map without mutating state.
 function clearFlag(flags, fieldName) {
@@ -33,6 +35,7 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
   const [draftStatus, setDraftStatus] = useState("");
   const [draftId, setDraftId] = useState(null);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [resumingDraft, setResumingDraft] = useState(false);
 
   // Day 17: AI-validation UI state, keyed by field name.
   //   aiMissedFields — the latest extraction couldn't fill these (need human entry)
@@ -125,6 +128,42 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
 
     setAiMissedFields(missedNow);
     setAiReviewFields(reviewNow);
+  };
+
+  // Resume a saved draft by its public resume token.
+  const handleResume = async (resumeToken) => {
+    if (!resumeToken) return;
+    setResumingDraft(true);
+    setDraftStatus("Loading saved draft...");
+
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/api/forms/draft/${resumeToken}`
+      );
+      const values = response.data.values || {};
+
+      // Apply all values in a batch so react-hook-form updates once.
+      Object.keys(values).forEach((k) => {
+        // Only set values for fields that exist in the schema.
+        const exists = schema.fields.find((f) => (f.name || f.id) === k);
+        if (exists) {
+          setValue(k, values[k], { shouldValidate: true, shouldDirty: true });
+          // Treat resumed non-empty values as human-edited so AI won't overwrite
+          // them on subsequent extractions.
+          if (values[k] !== undefined && values[k] !== null && values[k] !== "") {
+            humanEditedRef.current.add(k);
+            setAiMissedFields((prev) => clearFlag(prev, k));
+            setAiReviewFields((prev) => clearFlag(prev, k));
+          }
+        }
+      });
+
+      setDraftStatus("Draft loaded");
+    } catch (err) {
+      setDraftStatus(err.response?.data?.error || "Failed to load draft");
+    } finally {
+      setResumingDraft(false);
+    }
   };
 
   // Day 17: any manual edit overrides the AI — clear both AI states for that
@@ -244,6 +283,15 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
     >
       <h2 className="text-2xl font-bold mb-2">{schema.title}</h2>
 
+      {/* Resume entry area */}
+      <div className="mb-4">
+        {resumingDraft ? (
+          <SaveResumeLoading label={"Resuming draft..."} />
+        ) : (
+          <ResumeDraftEntry onResume={handleResume} />
+        )}
+      </div>
+
       {schema.description && (
         <p className="text-gray-600 mb-6">{schema.description}</p>
       )}
@@ -324,28 +372,25 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
           );
         }
 
-        // Day 17: wrap with Member 4's validation states where applicable.
-        // The wrappers add border + guidance message; no label passed because
-        // the inner components already render accessible labels.
-        if (aiMissedFields[fieldId]) {
-          return <AIMissedField key={fieldId}>{fieldNode}</AIMissedField>;
-        }
-        if (aiReviewFields[fieldId]) {
-          // Day 18: needs-review fields get a one-click correction affordance.
-          return (
-            <NeedsReviewField key={fieldId}>
-              {fieldNode}
-              <button
-                type="button"
-                onClick={() => startCorrection(fieldId)}
-                className="mt-1 text-xs font-medium text-yellow-800 underline hover:no-underline bg-transparent border-0 cursor-pointer"
-              >
-                Not right? Fix it
-              </button>
-            </NeedsReviewField>
-          );
-        }
-        return <Fragment key={fieldId}>{fieldNode}</Fragment>;
+        // Use a stable FieldWrapper for every field so toggling AI states
+        // doesn't remount the DOM node and cause layout jumps when many
+        // fields populate at once (resume flow).
+        const status = aiMissedFields[fieldId]
+          ? "missed"
+          : aiReviewFields[fieldId]
+          ? "review"
+          : "none";
+
+        return (
+          <FieldWrapper
+            key={fieldId}
+            status={status}
+            fieldId={fieldId}
+            onStartCorrection={status === "review" ? () => startCorrection(fieldId) : undefined}
+          >
+            {fieldNode}
+          </FieldWrapper>
+        );
       })}
 
       <button
