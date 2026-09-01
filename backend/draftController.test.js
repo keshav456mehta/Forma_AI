@@ -32,17 +32,39 @@ describe("draft API controller", () => {
       formId,
       values: { name: "Ada", hasPet: false },
       resumeToken: expect.any(String),
+      expiresAt: expect.any(Date),
     }));
     expect(response.status).toHaveBeenCalledWith(201);
     expect(response.json).toHaveBeenCalledWith({
       message: "Draft saved",
       savedAt,
       resumeToken: expect.any(String),
+      expiresAt: expect.any(Date),
     });
   });
 
+  test("sets the expiry exactly 30 days after the draft is saved", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-08-01T12:00:00.000Z"));
+    Form.findById.mockReturnValue({ lean: jest.fn().mockResolvedValue({ _id: formId }) });
+    Draft.create.mockImplementation(async (draft) => ({ ...draft, createdAt: new Date() }));
+    const response = responseRecorder();
+
+    await saveDraft({ params: { id: formId }, body: { values: {} } }, response);
+
+    expect(Draft.create).toHaveBeenCalledWith(expect.objectContaining({
+      expiresAt: new Date("2026-08-31T12:00:00.000Z"),
+    }));
+    jest.useRealTimers();
+  });
+
   test("retrieves a draft using its resume token", async () => {
-    const draft = { formId, values: { name: "Ada" }, resumeToken: "resume-token" };
+    const draft = {
+      formId,
+      values: { name: "Ada" },
+      resumeToken: "resume-token",
+      expiresAt: new Date("2026-09-29T10:00:00.000Z"),
+    };
     Draft.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(draft) });
     const response = responseRecorder();
 
@@ -53,7 +75,7 @@ describe("draft API controller", () => {
     expect(response.json).toHaveBeenCalledWith(draft);
   });
 
-  test("returns 404 when a resume token is invalid or expired", async () => {
+  test("returns 404 when a resume token is invalid", async () => {
     Draft.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
     const response = responseRecorder();
 
@@ -61,6 +83,22 @@ describe("draft API controller", () => {
 
     expect(response.status).toHaveBeenCalledWith(404);
     expect(response.json).toHaveBeenCalledWith({ error: "Draft not found" });
+  });
+
+  test("returns 410 with a clear error when a draft has expired", async () => {
+    const draft = {
+      formId,
+      values: { name: "Ada" },
+      resumeToken: "expired-token",
+      expiresAt: new Date("2026-08-29T10:00:00.000Z"),
+    };
+    Draft.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(draft) });
+    const response = responseRecorder();
+
+    await getDraft({ params: { id: formId, resumeToken: "expired-token" } }, response);
+
+    expect(response.status).toHaveBeenCalledWith(410);
+    expect(response.json).toHaveBeenCalledWith({ error: "This draft has expired" });
   });
 
   test("returns 404 when a resume token is malformed", async () => {

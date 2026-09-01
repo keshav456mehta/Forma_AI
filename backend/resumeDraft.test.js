@@ -8,10 +8,10 @@ const describeLiveApi = process.env.API_URL ? describe : describe.skip;
 const formId =
   process.env.EXTRACTION_FORM_ID || "507f1f77bcf86cd799439011";
 
-// Day 23: Pending until Member 2/3 implements
-// GET /api/forms/:formId/resume-draft/:resumeToken
+// Live API tests are opt-in via API_URL.
+// GET /api/forms/:id/draft/:resumeToken
 
-describeLiveApi.skip("Resume Draft API", () => {
+describeLiveApi("Resume Draft API", () => {
   jest.setTimeout(30000);
 
   const validToken = "sample-valid-token";

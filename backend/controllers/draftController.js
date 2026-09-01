@@ -3,6 +3,8 @@ const { randomUUID } = require("crypto");
 const Form = require("../models/Form");
 const Draft = require("../models/Draft");
 
+const DRAFT_EXPIRY_DAYS = 30;
+
 // Save a partially-filled form snapshot that can later be resumed using a
 // non-sequential, public-safe token instead of exposing the database id.
 async function saveDraft(req, res) {
@@ -30,16 +32,21 @@ async function saveDraft(req, res) {
       });
     }
 
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + DRAFT_EXPIRY_DAYS);
+
     const draft = await Draft.create({
       formId: id,
       values,
       resumeToken: randomUUID(),
+      expiresAt,
     });
 
     return res.status(201).json({
       message: "Draft saved",
       savedAt: draft.createdAt,
       resumeToken: draft.resumeToken,
+      expiresAt: draft.expiresAt,
     });
   } catch (error) {
     return res.status(500).json({
@@ -73,6 +80,12 @@ async function getDraft(req, res) {
       });
     }
 
+    if (new Date(draft.expiresAt).getTime() <= Date.now()) {
+      return res.status(410).json({
+        error: "This draft has expired",
+      });
+    }
+
     return res.status(200).json(draft);
   } catch (error) {
     return res.status(500).json({
@@ -82,6 +95,7 @@ async function getDraft(req, res) {
 }
 
 module.exports = {
+  DRAFT_EXPIRY_DAYS,
   saveDraft,
   getDraft,
 };
