@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const { getFormById, submitForm } = require("../controllers/formController");
+const { saveDraft, getDraft } = require("../controllers/draftController");
 const Form = require("../models/Form");
 const {
   extractFromStory,
@@ -12,6 +13,10 @@ const router = express.Router();
 // Keep the public form API grouped under /api/forms in server.js.
 router.get("/:id", getFormById);
 router.post("/:id/submit", submitForm);
+
+// Save a partial form and resume it later with the returned opaque token.
+router.post("/:id/draft", saveDraft);
+router.get("/:id/draft/:resumeToken", getDraft);
 
 /**
  * Turn a free-form story into a form submission using the form's own schema.
@@ -45,7 +50,6 @@ router.post("/:id/extract", async (req, res) => {
     if (error instanceof ExtractionServiceError) {
       return res.status(error.kind === "rate_limit" ? 429 : 503).json({
         error: "Extraction service unavailable, please try again",
-        kind: error.kind,
       });
     }
 

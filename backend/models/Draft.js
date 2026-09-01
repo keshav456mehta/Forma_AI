@@ -6,6 +6,7 @@ const draftSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Form",
       required: true,
+
       index: true,
     },
 
@@ -19,20 +20,42 @@ const draftSchema = new mongoose.Schema(
       default: Date.now,
     },
 
+=======
+    },
+    values: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+
     resumeToken: {
       type: String,
       required: true,
       unique: true,
       index: true,
     },
+
+    // Retained as data (rather than a TTL index) so the resume endpoint can
+    // return an explicit expiry response instead of treating it as missing.
+    expiresAt: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+
   },
   {
     timestamps: true,
   }
 );
 
+
 const Draft =
   mongoose.models.Draft ||
   mongoose.model("Draft", draftSchema);
 
 module.exports = Draft;
+=======
+const Draft = mongoose.models.Draft || mongoose.model("Draft", draftSchema);
+
+module.exports = Draft;
+
