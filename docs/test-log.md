@@ -67,3 +67,34 @@ Assigned to **Member 2/3**:
 - Return HTTP 200
 - Return a non-empty `resumeToken`
 - Support empty, partial, and near-complete drafts
+# Day 23 — Resume Draft API Test Coverage
+
+## Objective
+Validate retrieval of previously saved drafts using resume tokens.
+
+## Coverage Added
+
+| Scenario | Status |
+|----------|--------|
+| Valid resumeToken | Pending |
+| Invalid resumeToken | Pending |
+
+## Expected Behavior
+
+- Valid token returns HTTP 200 and the saved draft payload.
+- Invalid or nonexistent token returns HTTP 404 with a clear error message.
+- Tests are marked pending until the Resume Draft endpoint is implemented.
+# Day 24 — Draft Expiry Test Coverage
+
+## Coverage Added
+
+| Scenario | Status |
+|----------|--------|
+| Expired draft token | Pending |
+| Concurrent save requests | Pending |
+
+## Expected Behavior
+
+- Expired token returns HTTP 410 with a clear error message.
+- Concurrent saves complete successfully without crashing.
+- Tests are pending until Member 3 completes the backend implementation.
