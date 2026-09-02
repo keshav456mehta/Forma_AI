@@ -1,3 +1,4 @@
+import { emptyDraft, partialDraft, nearCompleteDraft } from "./testData/mockDrafts";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
@@ -284,7 +285,7 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
       <h2 className="text-2xl font-bold mb-2">{schema.title}</h2>
 
       {/* Resume entry area */}
-      <div className="mb-4">
+      <div className="form-field">
         {resumingDraft ? (
           <SaveResumeLoading label={"Resuming draft..."} />
         ) : (

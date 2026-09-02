@@ -182,3 +182,22 @@
     border-right-color: var(--border);
   }
 }
+
+.form-field {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.form-field--populated {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
