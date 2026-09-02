@@ -6,22 +6,9 @@ const draftSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Form",
       required: true,
-
       index: true,
     },
 
-    partialValues: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {},
-    },
-
-    savedAt: {
-      type: Date,
-      default: Date.now,
-    },
-
-=======
-    },
     values: {
       type: mongoose.Schema.Types.Mixed,
       default: {},
@@ -41,21 +28,14 @@ const draftSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-
   },
   {
     timestamps: true,
   }
 );
 
-
 const Draft =
   mongoose.models.Draft ||
   mongoose.model("Draft", draftSchema);
 
 module.exports = Draft;
-=======
-const Draft = mongoose.models.Draft || mongoose.model("Draft", draftSchema);
-
-module.exports = Draft;
-

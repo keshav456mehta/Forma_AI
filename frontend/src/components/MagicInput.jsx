@@ -123,8 +123,8 @@ export function buildMockExtraction(story) {
 
   // Names — "My name is X", "I'm X", "Owner is X" (stops at and/./,)
   const nameMatch = story.match(
-    /(?:my name is|i'm|i am|owner is)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+?)(?:\s+and|\.|,|$)/i
-  );
+  /(?:my name is|i'm|i am|owner is)\s+([A-Za-z]+(?:\s+[A-Za-z]+)+?)(?:\s+and|\s+from|\.|,|$)/i
+);
   if (nameMatch) {
     extracted.fullName = nameMatch[1].trim();
     extracted.ownerName = nameMatch[1].trim();
