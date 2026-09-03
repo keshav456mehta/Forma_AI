@@ -6,7 +6,6 @@ const draftSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Form",
       required: true,
-<<<<<<< HEAD
 
       index: true,
     },
@@ -21,13 +20,6 @@ const draftSchema = new mongoose.Schema(
       default: Date.now,
     },
 
-=======
-    },
-=======
-      index: true,
-    },
-
->>>>>>> origin/main
     values: {
       type: mongoose.Schema.Types.Mixed,
       default: {},
