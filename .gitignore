@@ -4,3 +4,5 @@ frontend/.env
 2004@123
 2004@123.pub
 node_modules/
+commit_log.txt
+prompt_week3_docs.md
