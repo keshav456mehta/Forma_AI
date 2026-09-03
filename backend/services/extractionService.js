@@ -6,7 +6,11 @@ const RETRY_BASE_DELAY_MS = 150;
 
 class ExtractionServiceError extends Error {
   constructor(kind) {
-    super("Extraction service unavailable, please try again");
+    super(
+      kind === "configuration"
+        ? "AI extraction is not configured"
+        : "Extraction service unavailable, please try again"
+    );
     this.name = "ExtractionServiceError";
     this.kind = kind;
   }
@@ -140,7 +144,7 @@ async function extractFromStory(text, fields) {
   }
 
   if (!process.env.OPENAI_API_KEY) {
-    return emptyExtraction(fields);
+    throw new ExtractionServiceError("configuration");
   }
 
   const client = new OpenAI({

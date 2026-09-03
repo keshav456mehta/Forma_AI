@@ -21,6 +21,12 @@ const draftSchema = new mongoose.Schema(
       index: true,
     },
 
+    revision: {
+      type: Number,
+      required: true,
+      default: 1,
+    },
+
     // Retained as data (rather than a TTL index) so the resume endpoint can
     // return an explicit expiry response instead of treating it as missing.
     expiresAt: {

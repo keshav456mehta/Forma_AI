@@ -103,13 +103,13 @@ describe("extractFromStory", () => {
     expect(create.mock.calls[0][0].messages[0].content).toContain("ambiguous");
   });
 
-  test("degrades gracefully for an incomplete story", async () => {
+  test("reports missing provider configuration", async () => {
     await expect(extractFromStory("Something happened to my car.", fields))
-      .resolves.toEqual({
-        incidentType: { value: "", found: false },
-        vehicle: { value: "", found: false },
-        damage: { value: "", found: false },
-      });
+      .rejects.toEqual(expect.objectContaining({
+        name: "ExtractionServiceError",
+        kind: "configuration",
+        message: "AI extraction is not configured",
+      }));
   });
 
   test("keeps found separate from an empty string or false checkbox value", async () => {

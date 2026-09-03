@@ -3,6 +3,7 @@ export default function SaveDraftButton({ status = "idle", onSave }) {
   return (
     <div className="save-draft-wrapper">
       <button
+        type="button"
         onClick={onSave}
         disabled={status === "saving"}
         className={`save-draft-btn save-draft-btn--${status}`}

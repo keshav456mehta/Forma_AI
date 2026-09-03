@@ -38,6 +38,7 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
   // idle/saving/success/error prop directly.
   const [draftSaveStatus, setDraftSaveStatus] = useState("idle");
   const [resumeToken, setResumeToken] = useState(null);
+  const [draftRevision, setDraftRevision] = useState(null);
 
   // Day 24: resume-draft state. Kept separate from save state since a user
   // could in principle resume a different draft than the one they just saved.
@@ -175,10 +176,15 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
     try {
       const response = await axios.post(
         `http://localhost:5000/api/forms/${formId}/draft`,
-        { values: currentValues }
+        {
+          values: currentValues,
+          ...(resumeToken ? { resumeToken, revision: draftRevision } : {}),
+        },
+        { timeout: 10000 }
       );
 
       setResumeToken(response.data.resumeToken);
+      setDraftRevision(response.data.revision);
       setDraftSaveStatus("success");
     } catch (err) {
       setDraftSaveStatus("error");
@@ -210,10 +216,11 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
 
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/forms/${formId}/draft/${trimmedCode}`
+        `http://localhost:5000/api/forms/${formId}/draft/${trimmedCode}`,
+        { timeout: 10000 }
       );
 
-      const { values } = response.data;
+      const { values, revision } = response.data;
 
       if (!values || typeof values !== "object") {
         setResumeStatus("Draft has no saved values.");
@@ -233,6 +240,8 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
       setAiMissedFields({});
       setAiReviewFields({});
       setAiWarning("");
+      setResumeToken(trimmedCode);
+      setDraftRevision(revision);
       setResumeStatus("Draft loaded.");
     } catch (err) {
       const message =
