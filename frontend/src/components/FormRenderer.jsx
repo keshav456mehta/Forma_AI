@@ -57,6 +57,7 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
   // "Not right?" on). Once claimed, NO later extraction may overwrite them —
   // a manual correction always wins, no matter the source.
   const humanEditedRef = useRef(new Set());
+  const suppressFieldAnimationRef = useRef(false); // Day 25: true during resume, so many fields appearing at once don't animate individually
 
   const {
     register,
@@ -65,7 +66,7 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
     setValue,
     getValues,
     formState: { errors, isSubmitting },
-  } = useForm();
+  } = useForm({ mode: "onChange" });
 
   const watchedValues = watch();
 
@@ -189,6 +190,15 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
   // watchedValues (and therefore showIf conditionals) update correctly,
   // exactly like AI extraction does. Every resumed field is also marked
   // human-edited so a stale extraction can never silently overwrite it.
+<<<<<<< HEAD
+=======
+  //
+  // Day 25: suppressFieldAnimationRef is flipped on for the duration of the
+  // resume so the (potentially many) fields that become visible via this
+  // setValue() loop appear instantly together, instead of each one playing
+  // the field-reveal entrance animation individually (which looked like a
+  // staggered, jarring layout jump).
+>>>>>>> origin/main
   const handleResumeDraft = async () => {
     const trimmedCode = resumeCodeInput.trim();
 
@@ -199,6 +209,10 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
 
     setResumingDraft(true);
     setResumeStatus("Loading draft...");
+<<<<<<< HEAD
+=======
+    suppressFieldAnimationRef.current = true; // Day 25: no animation for bulk resume
+>>>>>>> origin/main
 
     try {
       const response = await axios.get(
@@ -232,6 +246,15 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
       setResumeStatus(message);
     } finally {
       setResumingDraft(false);
+<<<<<<< HEAD
+=======
+      // Day 25: re-enable field animation shortly after resume settles, so
+      // any field the user changes manually afterward (e.g. toggling a
+      // dropdown that reveals a new conditional field) animates normally.
+      setTimeout(() => {
+        suppressFieldAnimationRef.current = false;
+      }, 300);
+>>>>>>> origin/main
     }
   };
 
@@ -337,7 +360,11 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
           </button>
         </div>
         {resumeStatus && (
+<<<<<<< HEAD
           <p role="status" className="mt-2 text-sm text-gray-600">
+=======
+          <p role="status" className="mt-2 text-sm text-gray-600 resume-status">
+>>>>>>> origin/main
             {resumeStatus}
           </p>
         )}
@@ -415,28 +442,48 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
           );
         }
 
+        // Day 25: only animate fields that are actually conditional (have a
+        // showIf rule) — unconditional fields render on first paint and
+        // don't need an entrance animation. Exit/unmount is intentionally
+        // NOT animated — fields still return null instantly above, so
+        // react-hook-form correctly drops validation on hidden fields
+        // (unchanged from Day 19 behavior).
+        const revealClass = field.showIf
+          ? `field-reveal${suppressFieldAnimationRef.current ? " no-animate" : ""}`
+          : "";
+
         // Day 17: wrap with Member 4's validation states where applicable.
         // The wrappers add border + guidance message; no label passed because
         // the inner components already render accessible labels.
         if (aiMissedFields[fieldId]) {
-          return <AIMissedField key={fieldId}>{fieldNode}</AIMissedField>;
+          return (
+            <div key={fieldId} className={revealClass}>
+              <AIMissedField>{fieldNode}</AIMissedField>
+            </div>
+          );
         }
         if (aiReviewFields[fieldId]) {
           // Day 18: needs-review fields get a one-click correction affordance.
           return (
-            <NeedsReviewField key={fieldId}>
-              {fieldNode}
-              <button
-                type="button"
-                onClick={() => startCorrection(fieldId)}
-                className="mt-1 text-xs font-medium text-yellow-800 underline hover:no-underline bg-transparent border-0 cursor-pointer"
-              >
-                Not right? Fix it
-              </button>
-            </NeedsReviewField>
+            <div key={fieldId} className={revealClass}>
+              <NeedsReviewField>
+                {fieldNode}
+                <button
+                  type="button"
+                  onClick={() => startCorrection(fieldId)}
+                  className="mt-1 text-xs font-medium text-yellow-800 underline hover:no-underline bg-transparent border-0 cursor-pointer"
+                >
+                  Not right? Fix it
+                </button>
+              </NeedsReviewField>
+            </div>
           );
         }
-        return <Fragment key={fieldId}>{fieldNode}</Fragment>;
+        return (
+          <div key={fieldId} className={revealClass}>
+            {fieldNode}
+          </div>
+        );
       })}
 
       <button
@@ -470,7 +517,7 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
       )}
 
       {submissionStatus && (
-        <p role="status" className="mt-4 text-green-600">
+        <p role="status" className="mt-4 text-green-600 save-msg">
           {submissionStatus}
         </p>
       )}

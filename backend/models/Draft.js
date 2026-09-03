@@ -6,6 +6,7 @@ const draftSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Form",
       required: true,
+<<<<<<< HEAD
 
       index: true,
     },
@@ -22,6 +23,11 @@ const draftSchema = new mongoose.Schema(
 
 =======
     },
+=======
+      index: true,
+    },
+
+>>>>>>> origin/main
     values: {
       type: mongoose.Schema.Types.Mixed,
       default: {},
@@ -41,21 +47,31 @@ const draftSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
   },
   {
     timestamps: true,
   }
 );
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
 const Draft =
   mongoose.models.Draft ||
   mongoose.model("Draft", draftSchema);
 
+<<<<<<< HEAD
 module.exports = Draft;
 =======
 const Draft = mongoose.models.Draft || mongoose.model("Draft", draftSchema);
 
 module.exports = Draft;
 
+=======
+module.exports = Draft;
+>>>>>>> origin/main
