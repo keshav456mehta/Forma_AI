@@ -39,31 +39,14 @@ const draftSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/main
   },
   {
     timestamps: true,
   }
 );
 
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/main
 const Draft =
   mongoose.models.Draft ||
   mongoose.model("Draft", draftSchema);
 
-<<<<<<< HEAD
 module.exports = Draft;
-=======
-const Draft = mongoose.models.Draft || mongoose.model("Draft", draftSchema);
-
-module.exports = Draft;
-
-=======
-module.exports = Draft;
->>>>>>> origin/main
