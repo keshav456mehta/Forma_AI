@@ -62,33 +62,24 @@ function cleanExtraction(value, fields) {
 async function requestModelExtraction(client, story, fields, strict) {
   const formFields = schemaFields(fields);
   const fieldInstructions = JSON.stringify(formFields);
-  const startedAt = Date.now();
-
   // Give the model the live form schema so its JSON can be applied directly.
-  let completion;
-  try {
-    completion = await client.chat.completions.create({
-      model: process.env.OPENAI_EXTRACTION_MODEL || "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      timeout: Number(process.env.OPENAI_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
-      messages: [
-        {
-          role: "system",
-          content: strict
-            ? `Return valid JSON only. No markdown, code fences, prose, or extra keys. Use exactly the field names in this schema: ${fieldInstructions}. Each field must be {"value": string|boolean, "found": boolean}; set found false only when the story does not provide a value.`
-            : `Extract the story into the supplied form schema. Return a JSON object with exactly the schema field names. Every field value must be {"value": string|boolean, "found": boolean}. Set found false when the story does not clearly provide a value, including conditional child fields whose value is ambiguous; use value "" for missing text/select fields and false for missing checkboxes. Include conditional fields too; use each field's showIf rule to understand its relationship to the controlling field. Never guess. For select fields, use an exact option value when options are supplied. Schema: ${fieldInstructions}. Return JSON only, with no markdown or prose.`,
-        },
-        {
-          role: "user",
-          content: story,
-        },
-      ],
-    });
-    console.info(`[extraction] model request completed in ${Date.now() - startedAt}ms`);
-  } catch (error) {
-    console.warn(`[extraction] model request failed after ${Date.now() - startedAt}ms`);
-    throw error;
-  }
+  const completion = await client.chat.completions.create({
+    model: process.env.OPENAI_EXTRACTION_MODEL || "gpt-4o-mini",
+    response_format: { type: "json_object" },
+    timeout: Number(process.env.OPENAI_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
+    messages: [
+      {
+        role: "system",
+        content: strict
+          ? `Return valid JSON only. No markdown, code fences, prose, or extra keys. Use exactly the field names in this schema: ${fieldInstructions}. Each field must be {"value": string|boolean, "found": boolean}; set found false only when the story does not provide a value.`
+          : `Extract the story into the supplied form schema. Return a JSON object with exactly the schema field names. Every field value must be {"value": string|boolean, "found": boolean}. Set found false when the story does not clearly provide a value, including conditional child fields whose value is ambiguous; use value "" for missing text/select fields and false for missing checkboxes. Include conditional fields too; use each field's showIf rule to understand its relationship to the controlling field. Never guess. For select fields, use an exact option value when options are supplied. Schema: ${fieldInstructions}. Return JSON only, with no markdown or prose.`,
+      },
+      {
+        role: "user",
+        content: story,
+      },
+    ],
+  });
 
   const content = completion.choices[0]?.message?.content;
   if (typeof content !== "string") {
@@ -135,7 +126,6 @@ async function requestWithTransientRetry(client, story, fields) {
       }
 
       const delay = RETRY_BASE_DELAY_MS * (2 ** attempt);
-      console.warn(`[extraction] transient provider failure; retrying in ${delay}ms (attempt ${attempt + 1}/${MAX_TRANSIENT_RETRIES})`);
       await sleep(delay);
     }
   }

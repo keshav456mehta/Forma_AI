@@ -302,3 +302,129 @@ and saved form state requires additional persisted metadata, such as:
 - Saved field values.
 - Last updated state.
 - AI-filled versus manually-edited value ownership.
+
+### Purpose
+
+A draft represents a partially completed form that can be saved and
+resumed later without requiring final form submission validation.
+
+### Draft Schema
+
+A draft should contain:
+
+| Field | Type | Purpose |
+|---|---|---|
+| `formId` | string | Identifies the form being saved |
+| `partialValues` | object | Contains the field values entered so far |
+| `savedAt` | string | Timestamp when the draft was saved |
+| `resumeToken` | string | Token used to resume the saved draft |
+| `expiresAt` | string | Timestamp after which the draft cannot be resumed |
+
+### Example
+
+```json
+{
+  "formId": "form-123",
+  "partialValues": {
+    "vehicle": "Honda",
+    "damage": "windshield"
+  },
+  "savedAt": "2026-08-29T21:00:00Z",
+  "resumeToken": "resume-token-example",
+  "expiresAt": "2026-09-28T21:00:00Z"
+}
+```
+### Implementation Review
+
+The draft schema was reviewed against the currently available
+Week 3 implementation.
+
+The backend persists draft values with a generated UUID `resumeToken`.
+
+### Current Draft Schema
+
+A draft is currently documented with:
+
+| Field | Type | Purpose |
+|---|---|---|
+| `formId` | string | Identifies the form |
+| `values` | object | Stores completed field values |
+| `createdAt` | string | Records when the draft was saved |
+| `resumeToken` | string | UUID used to resume a draft |
+| `expiresAt` | string | Set to 30 calendar days after the draft is saved |
+
+### Conditional Fields
+
+Conditional `showIf` state should be recomputed from the saved
+`values` and the stored form schema when a draft is resumed.
+A separate persisted copy of calculated visibility state is not
+required by the current documentation.
+
+### Resume Token
+
+The backend generates a UUID token, which uniquely identifies the saved
+draft without exposing its database id or contents.
+
+
+
+The schema is documented ahead of the backend save-draft route.
+Member 3 should use this documented shape when implementing the
+save-draft endpoint, and any implementation-specific naming or
+shape changes should be synchronized back into this document.
+
+## Day 24 — Resume Data Integrity and Schema Drift
+
+### Resume Data Integrity
+
+A saved draft must be reconstructed using the current form schema.
+Saved `partialValues` are matched by field `name` so that values continue
+to populate the corresponding fields when the schema has not changed.
+
+### Unchanged Schema
+
+When the form schema is unchanged after a draft is saved:
+
+1. Load the draft using its `resumeToken`.
+2. Load the current form schema using `formId`.
+3. Match saved values against current field names.
+4. Restore matching values into the form.
+5. Recompute conditional `showIf` state from the restored values.
+
+Values should therefore resume cleanly without changing their meaning.
+
+### Schema Drift
+
+A draft may outlive the version of the form schema that was used when it
+was created. Examples include:
+
+- A saved field was renamed.
+- A saved field was removed.
+- A new field was added.
+- A field's type or conditional rule changed.
+
+### Chosen Handling
+
+The current approach is to treat the current stored form schema as
+authoritative.
+
+When a draft is resumed:
+
+- Values whose field names still exist in the current schema are restored.
+- Values for fields no longer present in the current schema are ignored.
+- Newly added fields use their normal empty/default state.
+- Conditional visibility is recalculated using the current schema and
+  restored values.
+- Final validation is applied only when the user submits the form.
+
+This prevents obsolete draft data from being applied to fields that no
+longer exist while preserving compatible saved values.
+
+### Integration Finding
+
+The resume flow should therefore map draft values by current schema field
+names rather than relying on a fixed form shape.
+
+These findings should be shared with Member 1 for the resume-flow frontend
+implementation.
+
+
