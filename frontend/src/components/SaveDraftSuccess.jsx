@@ -10,7 +10,9 @@ export default function SaveDraftSuccess({ resumeCode }) {
   };
 
   return (
+
     <div className="save-success">
+      <div className="save-success save-success--animate"></div>
       <p className="save-success__title">Draft saved!</p>
       <p className="save-success__subtitle">
         Use this code to resume later:
