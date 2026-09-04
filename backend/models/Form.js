@@ -6,41 +6,56 @@ const fieldSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
     label: {
       type: String,
       required: true,
     },
+
     type: {
       type: String,
       required: true,
     },
+
     required: {
       type: Boolean,
       default: false,
     },
+
     order: {
       type: Number,
       required: true,
     },
+
     showIf: {
       fieldId: {
         type: String,
       },
+
       equals: {
         type: String,
       },
     },
-    // validationRegex: {
-    //   type: String,
-    // },
+
+    aliases: {
+      type: [String],
+      default: [],
+    },
+
     validationRegex: {
       type: String,
     },
+
     options: {
       type: [
         {
-          label: { type: String },
-          value: { type: String },
+          label: {
+            type: String,
+          },
+
+          value: {
+            type: String,
+          },
         },
       ],
       default: undefined,
@@ -57,10 +72,12 @@ const formSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
     description: {
       type: String,
       default: "",
     },
+
     fields: {
       type: [fieldSchema],
       default: [],
@@ -71,6 +88,8 @@ const formSchema = new mongoose.Schema(
   }
 );
 
-const Form = mongoose.models.Form || mongoose.model("Form", formSchema);
+const Form =
+  mongoose.models.Form ||
+  mongoose.model("Form", formSchema);
 
 module.exports = Form;
