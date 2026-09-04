@@ -59,6 +59,4 @@ const Draft =
 
 
 module.exports = Draft;
-=======
-module.exports = Draft;
 

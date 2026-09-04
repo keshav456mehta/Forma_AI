@@ -18,7 +18,7 @@ export default function ResumeDraftEntry({ onResume }) {
         className="resume-entry__input"
       />
       <button onClick={handleSubmit} className="resume-entry__btn">
-        Resume
+        Resume Draft
       </button>
     </div>
   );

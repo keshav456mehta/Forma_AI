@@ -1,9 +1,5 @@
 ﻿import FormRenderer from "./components/FormRenderer";
 import TestExtractionPage from "./pages/TestExtractionPage";
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/main
 function App() {
   const showTestPage =
     import.meta.env.DEV &&
