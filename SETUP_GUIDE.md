@@ -86,6 +86,7 @@ Create `backend/.env` with:
 ```env
 PORT=5000
 MONGODB_URI=your_mongodb_connection_string
+CORS_ORIGIN=http://localhost:5173
 ```
 
 You can also use `MONGO_URI` if your team already has that variable name in notes or screenshots.
@@ -95,6 +96,9 @@ Important:
 - use `backend/.env.example` as the tracked template
 
 If the MongoDB variable is empty, the backend still runs, but MongoDB will not connect.
+
+For production, set `CORS_ORIGIN` to the deployed frontend origin (or a
+comma-separated list of approved origins). Do not use `*` for this setting.
 
 ## 8. Useful Git commands
 

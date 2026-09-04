@@ -11,7 +11,13 @@ const BASIC_FORM = "507f1f77bcf86cd799439011";
 // Form 2: 3-level branching form
 const BRANCHING_FORM = "507f1f77bcf86cd799439012";
 
-describeLiveApi.skip("End-to-End Save → Resume → Submit", () => {
+function extractionValues(extraction) {
+  return Object.fromEntries(
+    Object.entries(extraction).map(([name, field]) => [name, field.value])
+  );
+}
+
+describeLiveApi("End-to-End Save → Resume → Submit", () => {
   jest.setTimeout(30000);
 
   test("completes the full journey on the basic form", async () => {
@@ -25,32 +31,32 @@ describeLiveApi.skip("End-to-End Save → Resume → Submit", () => {
 
     // 2. Validate / correct
     const draft = {
-      ...extract.data,
+      ...extractionValues(extract.data),
       city: "Tirupati",
       incidentType: "Theft",
     };
 
     // 3. Save draft
     const saved = await axios.post(
-      `${API_URL}/${BASIC_FORM}/save-draft`,
-      { draft }
+      `${API_URL}/${BASIC_FORM}/draft`,
+      { values: draft }
     );
 
-    expect(saved.status).toBe(200);
+    expect(saved.status).toBe(201);
     expect(saved.data.resumeToken).toBeDefined();
 
     // 4. Resume
     const resumed = await axios.get(
-      `${API_URL}/${BASIC_FORM}/resume-draft/${saved.data.resumeToken}`
+      `${API_URL}/${BASIC_FORM}/draft/${saved.data.resumeToken}`
     );
 
     expect(resumed.status).toBe(200);
-    expect(resumed.data.draft).toMatchObject(draft);
+    expect(resumed.data.values).toMatchObject(draft);
 
     // 5. Submit
     const submitted = await axios.post(
       `${API_URL}/${BASIC_FORM}/submit`,
-      resumed.data.draft
+      resumed.data.values
     );
 
     expect(submitted.status).toBe(200);
@@ -65,26 +71,26 @@ describeLiveApi.skip("End-to-End Save → Resume → Submit", () => {
     expect(extract.status).toBe(200);
 
     const draft = {
-      ...extract.data,
+      ...extractionValues(extract.data),
       hasInsurance: "Yes",
       insuranceType: "Health",
       policyNumber: "SH123456",
     };
 
     const saved = await axios.post(
-      `${API_URL}/${BRANCHING_FORM}/save-draft`,
-      { draft }
+      `${API_URL}/${BRANCHING_FORM}/draft`,
+      { values: draft }
     );
 
     const resumed = await axios.get(
-      `${API_URL}/${BRANCHING_FORM}/resume-draft/${saved.data.resumeToken}`
+      `${API_URL}/${BRANCHING_FORM}/draft/${saved.data.resumeToken}`
     );
 
-    expect(resumed.data.draft.policyNumber).toBe("SH123456");
+    expect(resumed.data.values.policyNumber).toBe("SH123456");
 
     const submitted = await axios.post(
       `${API_URL}/${BRANCHING_FORM}/submit`,
-      resumed.data.draft
+      resumed.data.values
     );
 
     expect(submitted.status).toBe(200);
