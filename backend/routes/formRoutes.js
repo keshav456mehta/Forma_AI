@@ -49,7 +49,9 @@ router.post("/:id/extract", async (req, res) => {
     // Do not expose provider details, raw prompts, or model output to clients.
     if (error instanceof ExtractionServiceError) {
       return res.status(error.kind === "rate_limit" ? 429 : 503).json({
-        error: "Extraction service unavailable, please try again",
+        error: error.kind === "configuration"
+          ? "AI extraction is not configured. Add OPENAI_API_KEY to backend/.env and restart the backend."
+          : "Extraction service unavailable, please try again",
       });
     }
 

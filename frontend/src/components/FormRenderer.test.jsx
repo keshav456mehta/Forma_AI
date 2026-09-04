@@ -97,6 +97,24 @@ describe("FormRenderer", () => {
     );
   });
 
+  it("sets a timeout when saving a draft", async () => {
+    axios.get.mockResolvedValue({
+      data: { title: "Student Form", fields: [{ name: "name", label: "Name" }] },
+    });
+    axios.post.mockResolvedValue({ data: { resumeToken: "resume-token", revision: 1 } });
+    render(<FormRenderer formId="form-id" />);
+    fireEvent.change(await screen.findByLabelText("Name"), {
+      target: { value: "Vinay" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save Draft" }));
+
+    await waitFor(() => expect(axios.post).toHaveBeenCalledWith(
+      "http://localhost:5000/api/forms/form-id/draft",
+      { values: { name: "Vinay" } },
+      { timeout: 10000 }
+    ));
+  });
+
   // Day 11: conditional field must appear when AI extraction sets the
   // controlling field's value programmatically via setValue().
   it("shows a conditional field after AI extraction populates the controlling field", async () => {
