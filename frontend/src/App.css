@@ -3,6 +3,12 @@
   --transition-easing: ease-in-out;
 }
 
+/* Example: fixing washed-out highlight color */
+.field--missed {
+  background-color: #fff3cd; /* adjust to your actual design color */
+  border: 2px solid #ffc107;
+}
+
 .save-success--animate {
   animation: fadeSlideIn var(--transition-duration) var(--transition-easing);
 }
