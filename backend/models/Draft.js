@@ -6,7 +6,18 @@ const draftSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Form",
       required: true,
+
       index: true,
+    },
+
+    partialValues: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+
+    savedAt: {
+      type: Date,
+      default: Date.now,
     },
 
     values: {

@@ -196,12 +196,15 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
   // watchedValues (and therefore showIf conditionals) update correctly,
   // exactly like AI extraction does. Every resumed field is also marked
   // human-edited so a stale extraction can never silently overwrite it.
+<<<<<<< HEAD
+=======
   //
   // Day 25: suppressFieldAnimationRef is flipped on for the duration of the
   // resume so the (potentially many) fields that become visible via this
   // setValue() loop appear instantly together, instead of each one playing
   // the field-reveal entrance animation individually (which looked like a
   // staggered, jarring layout jump).
+>>>>>>> origin/main
   const handleResumeDraft = async () => {
     const trimmedCode = resumeCodeInput.trim();
 
@@ -212,7 +215,10 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
 
     setResumingDraft(true);
     setResumeStatus("Loading draft...");
+<<<<<<< HEAD
+=======
     suppressFieldAnimationRef.current = true; // Day 25: no animation for bulk resume
+>>>>>>> origin/main
 
     try {
       const response = await axios.get(
@@ -249,12 +255,15 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
       setResumeStatus(message);
     } finally {
       setResumingDraft(false);
+<<<<<<< HEAD
+=======
       // Day 25: re-enable field animation shortly after resume settles, so
       // any field the user changes manually afterward (e.g. toggling a
       // dropdown that reveals a new conditional field) animates normally.
       setTimeout(() => {
         suppressFieldAnimationRef.current = false;
       }, 300);
+>>>>>>> origin/main
     }
   };
 
@@ -360,7 +369,11 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
           </button>
         </div>
         {resumeStatus && (
+<<<<<<< HEAD
+          <p role="status" className="mt-2 text-sm text-gray-600">
+=======
           <p role="status" className="mt-2 text-sm text-gray-600 resume-status">
+>>>>>>> origin/main
             {resumeStatus}
           </p>
         )}
