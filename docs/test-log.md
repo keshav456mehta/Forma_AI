@@ -98,3 +98,22 @@ Validate retrieval of previously saved drafts using resume tokens.
 - Expired token returns HTTP 410 with a clear error message.
 - Concurrent saves complete successfully without crashing.
 - Tests are pending until Member 3 completes the backend implementation.
+# Day 25 — End-to-End Save/Resume/Submit Integration
+
+## Coverage Added
+
+| Journey | Status |
+|---------|--------|
+| Extract → Validate → Save → Resume → Submit (Basic Form) | Pending |
+| Extract → Validate → Save → Resume → Submit (3-Level Branching) | Pending |
+
+## Expected Validation
+
+- Extracted fields are preserved after save/resume
+- Manual corrections persist after resume
+- Final submitted payload matches the saved draft
+- 3-level branching values remain intact through the full workflow
+
+## Gap Log
+
+Pending backend implementation of save/resume endpoints.

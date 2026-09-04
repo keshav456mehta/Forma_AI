@@ -18,6 +18,9 @@
   align-items: center;
   gap: 10px;
 }
+<<<<<<< HEAD
+.resume-code { font-weight: 600; }
+=======
 .resume-code { font-weight: 600; }
 
 .loading-state {
@@ -212,3 +215,4 @@
 .resume-status {
   transition: opacity 150ms ease-in;
 }
+>>>>>>> origin/main
