@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 
 // FIELD SCHEMA
-
 const fieldSchema = new mongoose.Schema(
   {
     name: {
@@ -40,6 +39,12 @@ const fieldSchema = new mongoose.Schema(
       },
     },
 
+    // ALIASES
+    aliases: {
+      type: [String],
+      default: [],
+    },
+
     // VALIDATION
     validationRegex: {
       type: String,
@@ -47,33 +52,10 @@ const fieldSchema = new mongoose.Schema(
   },
   {
     _id: false,
-  
-  
-  showIf: {
-  fieldId: {
-    type: String
-  },
-  equals: {
-    type: String
   }
-},
-
-aliases: {
-  type: [String],
-  default: [],
-},
-
-validationRegex: {
-  type: String
-}}
-
-
-
-
 );
 
 // FORM SCHEMA
-
 const formSchema = new mongoose.Schema(
   {
     title: {
@@ -94,16 +76,11 @@ const formSchema = new mongoose.Schema(
   {
     timestamps: true,
   }
-
-  
-
-
-
 );
 
-
 // FORM MODEL
-
-const Form = mongoose.model("Form", formSchema);
+const Form =
+  mongoose.models.Form ||
+  mongoose.model("Form", formSchema);
 
 module.exports = Form;

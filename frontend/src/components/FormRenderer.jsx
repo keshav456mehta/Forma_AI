@@ -7,9 +7,10 @@ import TextField from "./TextField";
 import Checkbox from "./Checkbox";
 import Dropdown from "./DropDown";
 import MagicInput from "./MagicInput";
-import { AIMissedField, NeedsReviewField, FieldWrapper } from "./ValidationStates";
-import ResumeDraftEntry from "./ResumeDraftEntry";
-import SaveResumeLoading from "./SaveResumeLoading";
+import { FieldWrapper } from "./ValidationStates";
+import SaveDraftButton from "./SaveDraftButton";
+import ResumeLinkDisplay from "./ResumeLinkDisplay";
+import "./save-resume.css";
 
 // Day 17: drop a single key out of an AI-state map without mutating state.
 function clearFlag(flags, fieldName) {
@@ -33,10 +34,18 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submissionStatus, setSubmissionStatus] = useState("");
-  const [draftStatus, setDraftStatus] = useState("");
-  const [draftId, setDraftId] = useState(null);
-  const [savingDraft, setSavingDraft] = useState(false);
+
+  // Day 23: save-draft state. draftSaveStatus feeds SaveDraftButton's
+  // idle/saving/success/error prop directly.
+  const [draftSaveStatus, setDraftSaveStatus] = useState("idle");
+  const [resumeToken, setResumeToken] = useState(null);
+  const [draftRevision, setDraftRevision] = useState(null);
+
+  // Day 24: resume-draft state. Kept separate from save state since a user
+  // could in principle resume a different draft than the one they just saved.
+  const [resumeCodeInput, setResumeCodeInput] = useState("");
   const [resumingDraft, setResumingDraft] = useState(false);
+  const [resumeStatus, setResumeStatus] = useState("");
 
   // Day 17: AI-validation UI state, keyed by field name.
   //   aiMissedFields — the latest extraction couldn't fill these (need human entry)
@@ -50,6 +59,7 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
   // "Not right?" on). Once claimed, NO later extraction may overwrite them —
   // a manual correction always wins, no matter the source.
   const humanEditedRef = useRef(new Set());
+  const suppressFieldAnimationRef = useRef(false); // Day 25: true during resume, so many fields appearing at once don't animate individually
 
   const {
     register,
@@ -58,7 +68,7 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
     setValue,
     getValues,
     formState: { errors, isSubmitting },
-  } = useForm();
+  } = useForm({ mode: "onChange" });
 
   const watchedValues = watch();
 
@@ -85,7 +95,7 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
   // as "" (not undefined), we skip empty/false values so a re-extraction
   // never wipes values the user already typed manually.
   // Day 20: support both live flat format ({ fullName: "Raj" }) and the
-  // nested format Praveen designed for ambiguous/extractions ({ fullName: { value: "Raj", found: true } }).
+  // nested format Praveen designed for ambiguous extractions ({ fullName: { value: "Raj", found: true } }).
   const getExtraction = (data, fieldName) => {
     const raw = data?.[fieldName];
     if (raw && typeof raw === "object" && "value" in raw && "found" in raw) {
@@ -131,42 +141,6 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
     setAiReviewFields(reviewNow);
   };
 
-  // Resume a saved draft by its public resume token.
-  const handleResume = async (resumeToken) => {
-    if (!resumeToken) return;
-    setResumingDraft(true);
-    setDraftStatus("Loading saved draft...");
-
-    try {
-      const response = await axios.get(
-        `http://localhost:5000/api/forms/draft/${resumeToken}`
-      );
-      const values = response.data.values || {};
-
-      // Apply all values in a batch so react-hook-form updates once.
-      Object.keys(values).forEach((k) => {
-        // Only set values for fields that exist in the schema.
-        const exists = schema.fields.find((f) => (f.name || f.id) === k);
-        if (exists) {
-          setValue(k, values[k], { shouldValidate: true, shouldDirty: true });
-          // Treat resumed non-empty values as human-edited so AI won't overwrite
-          // them on subsequent extractions.
-          if (values[k] !== undefined && values[k] !== null && values[k] !== "") {
-            humanEditedRef.current.add(k);
-            setAiMissedFields((prev) => clearFlag(prev, k));
-            setAiReviewFields((prev) => clearFlag(prev, k));
-          }
-        }
-      });
-
-      setDraftStatus("Draft loaded");
-    } catch (err) {
-      setDraftStatus(err.response?.data?.error || "Failed to load draft");
-    } finally {
-      setResumingDraft(false);
-    }
-  };
-
   // Day 17: any manual edit overrides the AI — clear both AI states for that
   // field so its highlight disappears as soon as the user starts typing.
   const handleUserChange = (fieldName, rhfOnChange) => (event) => {
@@ -180,7 +154,7 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
   // Day 18: "this doesn't look right" correction affordance. Clicking it
   // claims the field for the human, drops the needs-review highlight
   // immediately and focuses the input so the correct value can be typed
-  // straight away — no hunting for which field the ⚠️ belongs to.
+  // straight away — no hunting for which field the warning belongs to.
   const startCorrection = (fieldName) => {
     humanEditedRef.current.add(fieldName);
     setAiReviewFields((prev) => clearFlag(prev, fieldName));
@@ -192,28 +166,96 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
     setTimeout(() => document.getElementById(fieldName)?.focus(), 0);
   };
 
-  // Day 23: POSTs the current form state to the real save-draft endpoint.
-  // On success, stores the returned draftId so a resume link/flow (Day 24)
-  // can use it later.
+  // Day 23 (fixed for the resumeToken contract): POSTs the current form
+  // state to the save-draft endpoint. The backend no longer returns a
+  // MongoDB draftId — it returns an opaque resumeToken that's the only
+  // valid identifier for GET /api/forms/:id/draft/:resumeToken.
   const handleSaveDraft = async () => {
     const currentValues = getValues();
-    setSavingDraft(true);
-    setDraftStatus("Saving draft...");
+    setDraftSaveStatus("saving");
 
     try {
       const response = await axios.post(
         `http://localhost:5000/api/forms/${formId}/draft`,
-        { values: currentValues }
+        {
+          values: currentValues,
+          ...(resumeToken ? { resumeToken, revision: draftRevision } : {}),
+        },
+        { timeout: 10000 }
       );
 
-      setDraftId(response.data.draftId);
-      setDraftStatus(`Draft saved (ID: ${response.data.draftId})`);
+      setResumeToken(response.data.resumeToken);
+      setDraftRevision(response.data.revision);
+      setDraftSaveStatus("success");
+    } catch (err) {
+      setDraftSaveStatus("error");
+    }
+  };
+
+  // Day 24: fetches a previously saved draft by its resume token and
+  // repopulates the form. Resumed values are mapped via setValue() so
+  // watchedValues (and therefore showIf conditionals) update correctly,
+  // exactly like AI extraction does. Every resumed field is also marked
+  // human-edited so a stale extraction can never silently overwrite it.
+  //
+  // Day 25: suppressFieldAnimationRef is flipped on for the duration of the
+  // resume so the (potentially many) fields that become visible via this
+  // setValue() loop appear instantly together, instead of each one playing
+  // the field-reveal entrance animation individually (which looked like a
+  // staggered, jarring layout jump).
+  const handleResumeDraft = async () => {
+    const trimmedCode = resumeCodeInput.trim();
+
+    if (!trimmedCode) {
+      setResumeStatus("Enter a resume code to continue.");
+      return;
+    }
+
+    setResumingDraft(true);
+    setResumeStatus("Loading draft...");
+    suppressFieldAnimationRef.current = true; // Day 25: no animation for bulk resume
+
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/api/forms/${formId}/draft/${trimmedCode}`,
+        { timeout: 10000 }
+      );
+
+      const { values, revision } = response.data;
+
+      if (!values || typeof values !== "object") {
+        setResumeStatus("Draft has no saved values.");
+        return;
+      }
+
+      Object.entries(values).forEach(([fieldName, fieldValue]) => {
+        humanEditedRef.current.add(fieldName);
+        setValue(fieldName, fieldValue, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      });
+
+      // Resumed data is now the human's — clear any stale AI highlight state
+      // so nothing shows as "AI-missed" or "needs review" after resume.
+      setAiMissedFields({});
+      setAiReviewFields({});
+      setAiWarning("");
+      setResumeToken(trimmedCode);
+      setDraftRevision(revision);
+      setResumeStatus("Draft loaded.");
     } catch (err) {
       const message =
-        err.response?.data?.error || "Failed to save draft. Please try again.";
-      setDraftStatus(message);
+        err.response?.data?.error || "Failed to load draft. Check the code and try again.";
+      setResumeStatus(message);
     } finally {
-      setSavingDraft(false);
+      setResumingDraft(false);
+      // Day 25: re-enable field animation shortly after resume settles, so
+      // any field the user changes manually afterward (e.g. toggling a
+      // dropdown that reveals a new conditional field) animates normally.
+      setTimeout(() => {
+        suppressFieldAnimationRef.current = false;
+      }, 300);
     }
   };
 
@@ -284,15 +326,6 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
     >
       <h2 className="text-2xl font-bold mb-2">{schema.title}</h2>
 
-      {/* Resume entry area */}
-      <div className="form-field">
-        {resumingDraft ? (
-          <SaveResumeLoading label={"Resuming draft..."} />
-        ) : (
-          <ResumeDraftEntry onResume={handleResume} />
-        )}
-      </div>
-
       {schema.description && (
         <p className="text-gray-600 mb-6">{schema.description}</p>
       )}
@@ -300,6 +333,39 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
       {/* Day 9: Magic Input — sends story text to extraction API,
           then calls applyExtractedData() to pre-fill matching fields */}
       <MagicInput formId={formId} onExtracted={applyExtractedData} />
+
+      {/* Day 24: resume a previously saved draft by its resume code.
+          ResumeLinkDisplay (below) only ever shows a code back to the user
+          after a save — it has no input, so entering a code to resume still
+          needs its own control here. */}
+      <div className="mb-6 p-4 border border-gray-200 rounded-md">
+        <label htmlFor="resumeCodeInput" className="block text-sm font-medium mb-1">
+          Resume a saved draft
+        </label>
+        <div className="flex gap-2">
+          <input
+            id="resumeCodeInput"
+            type="text"
+            value={resumeCodeInput}
+            onChange={(e) => setResumeCodeInput(e.target.value)}
+            placeholder="Paste resume code"
+            className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
+          />
+          <button
+            type="button"
+            onClick={handleResumeDraft}
+            disabled={resumingDraft}
+            className="px-3 py-2 bg-gray-700 text-white rounded-md text-sm disabled:opacity-50"
+          >
+            {resumingDraft ? "Loading..." : "Resume"}
+          </button>
+        </div>
+        {resumeStatus && (
+          <p role="status" className="mt-2 text-sm text-gray-600 resume-status">
+            {resumeStatus}
+          </p>
+        )}
+      </div>
 
       {schema.fields.map((field) => {
         // Skip fields whose showIf condition isn't currently satisfied.
@@ -373,24 +439,27 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
           );
         }
 
-        // Use a stable FieldWrapper for every field so toggling AI states
-        // doesn't remount the DOM node and cause layout jumps when many
-        // fields populate at once (resume flow).
+        // Keep the validation wrapper stable while animating newly visible
+        // conditional fields.
         const status = aiMissedFields[fieldId]
           ? "missed"
           : aiReviewFields[fieldId]
           ? "review"
           : "none";
+        const revealClass = field.showIf
+          ? `field-reveal${suppressFieldAnimationRef.current ? " no-animate" : ""}`
+          : "";
 
         return (
-          <FieldWrapper
-            key={fieldId}
-            status={status}
-            fieldId={fieldId}
-            onStartCorrection={status === "review" ? () => startCorrection(fieldId) : undefined}
-          >
+          <div key={fieldId} className={revealClass}>
+            <FieldWrapper
+              status={status}
+              fieldId={fieldId}
+              onStartCorrection={status === "review" ? () => startCorrection(fieldId) : undefined}
+            >
             {fieldNode}
-          </FieldWrapper>
+            </FieldWrapper>
+          </div>
         );
       })}
 
@@ -402,15 +471,19 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
         {isSubmitting ? "Submitting..." : "Submit"}
       </button>
 
-      {/* Day 23: save-draft action now posts to the real backend endpoint */}
-      <button
-        type="button"
-        onClick={handleSaveDraft}
-        disabled={savingDraft}
-        className="ml-2 px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 disabled:opacity-50"
-      >
-        {savingDraft ? "Saving..." : "Save Draft"}
-      </button>
+      {/* Day 23 (fixed): save-draft action, now via the teammate-built
+          SaveDraftButton component instead of an inline button. */}
+      <span className="ml-2 inline-block align-middle">
+        <SaveDraftButton status={draftSaveStatus} onSave={handleSaveDraft} />
+      </span>
+
+      {/* Day 24: show the resume code once a save succeeds, so the user has
+          something to copy for later. */}
+      {draftSaveStatus === "success" && resumeToken && (
+        <div className="mt-3">
+          <ResumeLinkDisplay resumeCode={resumeToken} />
+        </div>
+      )}
 
       {/* Day 17: explicit warning when submission is blocked because required
           fields the AI missed are still empty. */}
@@ -421,14 +494,8 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
       )}
 
       {submissionStatus && (
-        <p role="status" className="mt-4 text-green-600">
+        <p role="status" className="mt-4 text-green-600 save-msg">
           {submissionStatus}
-        </p>
-      )}
-
-      {draftStatus && (
-        <p role="status" className="mt-2 text-blue-600 text-sm">
-          {draftStatus}
         </p>
       )}
 

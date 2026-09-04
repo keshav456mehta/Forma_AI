@@ -178,4 +178,37 @@
   .save-success {
     flex-direction: column;
   }
+
+
+/* Day 25: entrance animation for conditional (showIf) fields becoming
+   visible. Exit is intentionally NOT animated — fields still unmount
+   instantly via `return null` so react-hook-form correctly drops
+   validation on hidden fields (unchanged from Day 19 behavior). */
+@keyframes field-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.field-reveal {
+  animation: field-reveal 220ms ease-out;
+}
+
+/* Applied during draft resume so many fields appearing at once (Day 24
+   resume setValue() loop) don't stagger/animate individually and cause
+   a jarring layout jump. */
+.field-reveal.no-animate {
+  animation: none;
+}
+
+/* Day 25: subtle transition for save/resume status text instead of an
+   abrupt swap. */
+.save-msg,
+.resume-status {
+  transition: opacity 150ms ease-in;
 }

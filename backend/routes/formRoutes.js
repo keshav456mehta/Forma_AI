@@ -16,7 +16,7 @@ router.post("/:id/submit", submitForm);
 
 // Save a partial form and resume it later with the returned opaque token.
 router.post("/:id/draft", saveDraft);
-router.get("/draft/:resumeToken", getDraft);
+router.get("/:id/draft/:resumeToken", getDraft);
 
 /**
  * Turn a free-form story into a form submission using the form's own schema.
@@ -49,7 +49,9 @@ router.post("/:id/extract", async (req, res) => {
     // Do not expose provider details, raw prompts, or model output to clients.
     if (error instanceof ExtractionServiceError) {
       return res.status(error.kind === "rate_limit" ? 429 : 503).json({
-        error: "Extraction service unavailable, please try again",
+        error: error.kind === "configuration"
+          ? "AI extraction is not configured. Add OPENAI_API_KEY to backend/.env and restart the backend."
+          : "Extraction service unavailable, please try again",
       });
     }
 
