@@ -7,9 +7,19 @@ const Form = require("../models/Form");
 
 const router = express.Router();
 
+// Draft expiry: 30 days
+const DRAFT_EXPIRY_DAYS = 30;
+
 // Generate a unique resume token
 function generateResumeToken() {
   return crypto.randomBytes(24).toString("hex");
+}
+
+// Calculate draft expiry date
+function getDraftExpiryDate() {
+  return new Date(
+    Date.now() + DRAFT_EXPIRY_DAYS * 24 * 60 * 60 * 1000
+  );
 }
 
 // ======================================================
@@ -58,6 +68,7 @@ router.post("/", async (req, res) => {
       partialValues: compatibleValues,
       savedAt: new Date(),
       resumeToken: generateResumeToken(),
+      expiresAt: getDraftExpiryDate(),
     });
 
     return res.status(201).json({
@@ -66,6 +77,7 @@ router.post("/", async (req, res) => {
       partialValues: draft.partialValues,
       savedAt: draft.savedAt,
       resumeToken: draft.resumeToken,
+      expiresAt: draft.expiresAt,
     });
   } catch (error) {
     console.error("Save draft failed:", error.message);
@@ -93,6 +105,13 @@ router.get("/:resumeToken", async (req, res) => {
     if (!draft) {
       return res.status(404).json({
         error: "Draft not found",
+      });
+    }
+
+    // Check draft expiry
+    if (draft.expiresAt && draft.expiresAt <= new Date()) {
+      return res.status(410).json({
+        error: "Draft expired",
       });
     }
 
@@ -127,6 +146,7 @@ router.get("/:resumeToken", async (req, res) => {
       partialValues: compatibleValues,
       savedAt: draft.savedAt,
       resumeToken: draft.resumeToken,
+      expiresAt: draft.expiresAt,
     });
   } catch (error) {
     console.error("Resume draft failed:", error.message);
