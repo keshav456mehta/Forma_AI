@@ -56,27 +56,19 @@ app.use("/api/drafts", draftRoutes);
 
 async function startServer() {
   if (!MONGODB_URI) {
-    console.warn(
-      "MongoDB URI missing. Starting server without MongoDB."
-    );
+    // The extraction endpoint can operate without the database; form and
+    // draft endpoints still return their normal database-backed errors.
   } else {
     try {
       await mongoose.connect(MONGODB_URI);
-      console.log("MongoDB connected");
-    } catch (error) {
-      console.warn(
-        "MongoDB connection failed:",
-        error.message
-      );
-      console.warn(
-        "Starting server without MongoDB. Extraction API is still available."
-      );
+    } catch (_error) {
+      // Start the HTTP service so extraction remains available when MongoDB
+      // is temporarily unavailable; database routes fail through their API
+      // error contract instead of crashing the process.
     }
   }
 
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
+  app.listen(PORT);
 }
 
 startServer();
