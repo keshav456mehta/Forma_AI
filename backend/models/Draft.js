@@ -9,16 +9,10 @@ const draftSchema = new mongoose.Schema(
       index: true,
     },
 
-    partialValues: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {},
-    },
-
     savedAt: {
       type: Date,
       default: Date.now,
     },
-
 
     values: {
       type: mongoose.Schema.Types.Mixed,
@@ -39,9 +33,8 @@ const draftSchema = new mongoose.Schema(
       default: 1,
     },
 
-    // Retained as data (rather than a TTL index) so the resume endpoint can
-    // return an explicit expiry response instead of treating it as missing.
-
+    // Retain expiry as data (rather than a TTL index) so the resume endpoint
+    // can return an explicit expiry response instead of treating it as missing.
     expiresAt: {
       type: Date,
       required: true,
@@ -56,7 +49,5 @@ const draftSchema = new mongoose.Schema(
 const Draft =
   mongoose.models.Draft ||
   mongoose.model("Draft", draftSchema);
-
-
 module.exports = Draft;
 

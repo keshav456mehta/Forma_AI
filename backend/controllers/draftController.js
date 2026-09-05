@@ -25,7 +25,9 @@ async function saveDraft(req, res) {
     return res.status(400).json({ error: "Invalid form ID" });
   }
 
-  if (typeof values !== "object" || values === null) {
+  // Drafts accept only an object payload; token and revision are required
+  // together on updates so optimistic-concurrency checks are meaningful.
+  if (typeof values !== "object" || values === null || Array.isArray(values)) {
     return res.status(400).json({ error: "values is required" });
   }
 
