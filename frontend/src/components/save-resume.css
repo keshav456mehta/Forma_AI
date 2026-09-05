@@ -18,9 +18,6 @@
   align-items: center;
   gap: 10px;
 }
-<<<<<<< HEAD
-.resume-code { font-weight: 600; }
-=======
 .resume-code { font-weight: 600; }
 
 .loading-state {
@@ -181,6 +178,7 @@
   .save-success {
     flex-direction: column;
   }
+}
 
 
 /* Day 25: entrance animation for conditional (showIf) fields becoming
@@ -215,4 +213,3 @@
 .resume-status {
   transition: opacity 150ms ease-in;
 }
->>>>>>> origin/main

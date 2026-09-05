@@ -49,7 +49,7 @@ export function FieldWrapper({ status = "none", children, fieldId, onStartCorrec
   }`;
 
   return (
-    <div className={className} id={fieldId}>
+    <div className={className} data-field-id={fieldId}>
       {children}
       {status === "missed" && (
         <div className="field-message missed-message">

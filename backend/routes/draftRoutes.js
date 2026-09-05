@@ -6,63 +6,37 @@ const Draft = require("../models/Draft");
 const Form = require("../models/Form");
 
 const router = express.Router();
-
-// Draft expiry: 30 days
 const DRAFT_EXPIRY_DAYS = 30;
 
-// Generate a unique resume token
 function generateResumeToken() {
   return crypto.randomBytes(24).toString("hex");
 }
 
-// Calculate draft expiry date
 function getDraftExpiryDate() {
-  return new Date(
-    Date.now() + DRAFT_EXPIRY_DAYS * 24 * 60 * 60 * 1000
-  );
+  return new Date(Date.now() + DRAFT_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 }
-
-// ======================================================
-// POST /api/drafts
-// Save a partially completed form
-// ======================================================
 
 router.post("/", async (req, res) => {
   try {
     const { formId, partialValues = {} } = req.body;
 
-    // Validate form ID
     if (!mongoose.Types.ObjectId.isValid(formId)) {
-      return res.status(400).json({
-        error: "Invalid form ID",
-      });
+      return res.status(400).json({ error: "Invalid form ID" });
     }
 
-    // Make sure the form exists
     const form = await Form.findById(formId).lean();
-
     if (!form) {
-      return res.status(404).json({
-        error: "Form not found",
-      });
+      return res.status(404).json({ error: "Form not found" });
     }
 
-    // Only save fields that currently exist in the form schema.
-    const validFieldNames = new Set(
-      form.fields.map((field) => field.name)
-    );
-
+    // A draft follows the current schema, so stale client keys are never
+    // persisted and cannot reappear when the form is resumed.
+    const validFieldNames = new Set(form.fields.map((field) => field.name));
     const compatibleValues = {};
+    Object.entries(partialValues).forEach(([fieldName, value]) => {
+      if (validFieldNames.has(fieldName)) compatibleValues[fieldName] = value;
+    });
 
-    Object.entries(partialValues).forEach(
-      ([fieldName, value]) => {
-        if (validFieldNames.has(fieldName)) {
-          compatibleValues[fieldName] = value;
-        }
-      }
-    );
-
-    // Create draft
     const draft = await Draft.create({
       formId,
       partialValues: compatibleValues,
@@ -79,66 +53,32 @@ router.post("/", async (req, res) => {
       resumeToken: draft.resumeToken,
       expiresAt: draft.expiresAt,
     });
-  } catch (error) {
-    console.error("Save draft failed:", error.message);
-
-    return res.status(500).json({
-      error: "Unable to save draft",
-    });
+  } catch (_error) {
+    return res.status(500).json({ error: "Unable to save draft" });
   }
 });
-
-// ======================================================
-// GET /api/drafts/:resumeToken
-// Resume a saved draft
-// ======================================================
 
 router.get("/:resumeToken", async (req, res) => {
   try {
     const { resumeToken } = req.params;
+    const draft = await Draft.findOne({ resumeToken }).lean();
 
-    // Find draft
-    const draft = await Draft.findOne({
-      resumeToken,
-    }).lean();
+    if (!draft) return res.status(404).json({ error: "Draft not found" });
 
-    if (!draft) {
-      return res.status(404).json({
-        error: "Draft not found",
-      });
-    }
-
-    // Check draft expiry
+    // Expiry is checked before returning saved values, including drafts kept
+    // after expiration so clients receive a useful 410 response.
     if (draft.expiresAt && draft.expiresAt <= new Date()) {
-      return res.status(410).json({
-        error: "Draft expired",
-      });
+      return res.status(410).json({ error: "Draft expired" });
     }
 
-    // Load current form schema
     const form = await Form.findById(draft.formId).lean();
+    if (!form) return res.status(404).json({ error: "Form not found" });
 
-    if (!form) {
-      return res.status(404).json({
-        error: "Form not found",
-      });
-    }
-
-    // Current form schema is authoritative.
-    // Ignore fields that no longer exist.
-    const validFieldNames = new Set(
-      form.fields.map((field) => field.name)
-    );
-
+    const validFieldNames = new Set(form.fields.map((field) => field.name));
     const compatibleValues = {};
-
-    Object.entries(draft.partialValues || {}).forEach(
-      ([fieldName, value]) => {
-        if (validFieldNames.has(fieldName)) {
-          compatibleValues[fieldName] = value;
-        }
-      }
-    );
+    Object.entries(draft.partialValues || {}).forEach(([fieldName, value]) => {
+      if (validFieldNames.has(fieldName)) compatibleValues[fieldName] = value;
+    });
 
     return res.status(200).json({
       id: draft._id,
@@ -148,12 +88,8 @@ router.get("/:resumeToken", async (req, res) => {
       resumeToken: draft.resumeToken,
       expiresAt: draft.expiresAt,
     });
-  } catch (error) {
-    console.error("Resume draft failed:", error.message);
-
-    return res.status(500).json({
-      error: "Unable to resume draft",
-    });
+  } catch (_error) {
+    return res.status(500).json({ error: "Unable to resume draft" });
   }
 });
 
