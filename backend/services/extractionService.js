@@ -175,4 +175,37 @@ async function extractFromStory(text, fields) {
   }
 }
 
-module.exports = { extractFromStory, ExtractionServiceError };
+function extractLocallyFromStory(text, fields) {
+  const result = emptyExtraction(fields);
+  const story = text.trim();
+  const lowerStory = story.toLowerCase();
+
+  for (const field of schemaFields(fields)) {
+    let value = "";
+
+    if (/email/i.test(`${field.name} ${field.label}`)) {
+      value = story.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/)?.[0] || "";
+    } else if (/name/i.test(`${field.name} ${field.label}`)) {
+      value = story.match(/(?:my name is|i am|i'm|name is)\s+([A-Za-z]+(?:\s+[A-Za-z]+)*?)(?:\s+and|\s+from|\.|,|$)/i)?.[1]?.trim() || "";
+    }
+
+    if (!value && field.options.length > 0) {
+      const matchingOption = field.options.find((option) =>
+        lowerStory.includes(String(option).toLowerCase())
+      );
+      value = matchingOption || "";
+    }
+
+    if (value) {
+      result[field.name] = { value, found: true };
+    }
+  }
+
+  return result;
+}
+
+module.exports = {
+  extractFromStory,
+  extractLocallyFromStory,
+  ExtractionServiceError,
+};
