@@ -40,3 +40,38 @@ export function NeedsReviewField({ label, children }) {
     </div>
   );
 }
+
+// Stable wrapper: always renders the outer container to reserve layout
+// space and avoid layout shifts when a state toggles on resume.
+export function FieldWrapper({ status = "none", children, fieldId, onStartCorrection }) {
+  const className = `field-wrapper ${
+    status === "missed" ? "ai-missed" : status === "review" ? "needs-review" : ""
+  }`;
+
+  return (
+    <div className={className} data-field-id={fieldId}>
+      {children}
+      {status === "missed" && (
+        <div className="field-message missed-message">
+          <span aria-hidden="true">❓</span>
+          <span>AI couldn't find this — please fill it in</span>
+        </div>
+      )}
+      {status === "review" && (
+        <div className="field-message review-message">
+          <span aria-hidden="true">⚠️</span>
+          <span>Please double-check this value</span>
+          {onStartCorrection && (
+            <button
+              type="button"
+              onClick={onStartCorrection}
+              className="mt-1 text-xs font-medium text-yellow-800 underline hover:no-underline bg-transparent border-0 cursor-pointer"
+            >
+              Not right? Fix it
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

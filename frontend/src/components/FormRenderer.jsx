@@ -6,7 +6,7 @@ import TextField from "./TextField";
 import Checkbox from "./Checkbox";
 import Dropdown from "./DropDown";
 import MagicInput from "./MagicInput";
-import { AIMissedField, NeedsReviewField } from "./ValidationStates";
+import { FieldWrapper } from "./ValidationStates";
 import SaveDraftButton from "./SaveDraftButton";
 import ResumeLinkDisplay from "./ResumeLinkDisplay";
 import "./save-resume.css";
@@ -443,46 +443,26 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
           );
         }
 
-        // Day 25: only animate fields that are actually conditional (have a
-        // showIf rule) — unconditional fields render on first paint and
-        // don't need an entrance animation. Exit/unmount is intentionally
-        // NOT animated — fields still return null instantly above, so
-        // react-hook-form correctly drops validation on hidden fields
-        // (unchanged from Day 19 behavior).
+        // Keep the validation wrapper stable while animating newly visible
+        // conditional fields.
+        const status = aiMissedFields[fieldId]
+          ? "missed"
+          : aiReviewFields[fieldId]
+          ? "review"
+          : "none";
         const revealClass = field.showIf
           ? `field-reveal${suppressFieldAnimationRef.current ? " no-animate" : ""}`
           : "";
 
-        // Day 17: wrap with Member 4's validation states where applicable.
-        // The wrappers add border + guidance message; no label passed because
-        // the inner components already render accessible labels.
-        if (aiMissedFields[fieldId]) {
-          return (
-            <div key={fieldId} className={revealClass}>
-              <AIMissedField>{fieldNode}</AIMissedField>
-            </div>
-          );
-        }
-        if (aiReviewFields[fieldId]) {
-          // Day 18: needs-review fields get a one-click correction affordance.
-          return (
-            <div key={fieldId} className={revealClass}>
-              <NeedsReviewField>
-                {fieldNode}
-                <button
-                  type="button"
-                  onClick={() => startCorrection(fieldId)}
-                  className="mt-1 text-xs font-medium text-yellow-800 underline hover:no-underline bg-transparent border-0 cursor-pointer"
-                >
-                  Not right? Fix it
-                </button>
-              </NeedsReviewField>
-            </div>
-          );
-        }
         return (
           <div key={fieldId} className={revealClass}>
+            <FieldWrapper
+              status={status}
+              fieldId={fieldId}
+              onStartCorrection={status === "review" ? () => startCorrection(fieldId) : undefined}
+            >
             {fieldNode}
+            </FieldWrapper>
           </div>
         );
       })}

@@ -9,8 +9,6 @@ const nonexistentFormId = "507f1f77bcf86cd799439011";
 const invalidFormId = "invalid-id";
 
 async function testApi() {
-  console.log("Running Forma AI API tests...\n");
-
   // Test 1: Invalid form ID should return 400.
   try {
     await axios.get(`${API_URL}/${invalidFormId}`);
@@ -33,7 +31,6 @@ async function testApi() {
       throw new Error("Unexpected response for invalid form ID.");
     }
 
-    console.log("PASS: Invalid ID test passed");
   }
 
   // Test 2: Valid-format but nonexistent ID should return 404.
@@ -58,14 +55,10 @@ async function testApi() {
       throw new Error("Unexpected response for nonexistent form.");
     }
 
-    console.log("PASS: Nonexistent ID test passed");
   }
 
-  console.log("\nAll API tests passed.");
 }
 
-testApi().catch((error) => {
-  console.error("\nAPI test failed:");
-  console.error(error.message);
+testApi().catch(() => {
   process.exit(1);
 });
