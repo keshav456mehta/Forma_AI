@@ -49,18 +49,18 @@ export default function MagicInput({ formId, onExtracted }) {
   };
 
   return (
-    <div className="mb-6 p-4 border border-blue-200 rounded-lg bg-blue-50">
-      <div className="flex items-center justify-between">
-        <label htmlFor="magic-input" className="block text-sm font-semibold text-blue-800 mb-1">
+    <div className="mb-6 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-violet-50 p-4 shadow-sm">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <label htmlFor="magic-input" className="block text-sm font-semibold text-indigo-800">
           Magic Input
         </label>
         {mockMode && (
           <span
             role="note"
             aria-label="mock mode"
-            className="text-[10px] font-bold tracking-wide text-orange-700 bg-orange-100 border border-orange-300 rounded px-1.5 py-0.5"
+            className="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-800"
           >
-            MOCK — not calling the AI
+            Mock
           </span>
         )}
       </div>
@@ -71,14 +71,14 @@ export default function MagicInput({ formId, onExtracted }) {
         disabled={extracting}
         rows={3}
         placeholder="Describe your incident and we’ll fill the form for you."
-        className="w-full px-3 py-2 border border-blue-300 rounded-md text-sm resize-none"
+        className="w-full resize-none rounded-xl border border-indigo-200 bg-white px-3 py-3 text-sm text-slate-700 shadow-inner shadow-indigo-100/50 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
       />
-      {extractError && <p role="alert" className="text-xs text-red-600 mt-1">{extractError}</p>}
+      {extractError && <p role="alert" className="mt-2 text-xs text-red-600">{extractError}</p>}
       <button
         type="button"
         onClick={handleExtract}
         disabled={extracting || !story.trim()}
-        className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-md disabled:opacity-50"
+        className="mt-3 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:translate-y-[-1px] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
       >
         {extracting ? "Extracting…" : "Auto-fill from story"}
       </button>

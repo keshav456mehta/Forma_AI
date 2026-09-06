@@ -2,8 +2,10 @@ const mongoose = require("mongoose");
 const { randomUUID } = require("crypto");
 const Form = require("../models/Form");
 const Draft = require("../models/Draft");
+const { fallbackForm, shouldUseFallbackForm } = require("./formController");
 
 const DRAFT_EXPIRY_DAYS = 30;
+const localDrafts = new Map();
 
 function draftResponse(draft) {
   return {
@@ -40,6 +42,44 @@ async function saveDraft(req, res) {
   }
 
   try {
+    const useLocalDraftStore = shouldUseFallbackForm() && process.env.NODE_ENV !== "test";
+
+    if (useLocalDraftStore) {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + DRAFT_EXPIRY_DAYS);
+
+      if (resumeToken) {
+        const key = `${id}:${resumeToken}`;
+        const draft = localDrafts.get(key);
+
+        if (!draft) {
+          return res.status(404).json({ error: "Draft not found" });
+        }
+
+        if (draft.revision !== revision) {
+          return res.status(409).json({
+            error: "Draft has been updated elsewhere. Reload it and try again.",
+          });
+        }
+
+        draft.values = values;
+        draft.expiresAt = expiresAt;
+        draft.revision += 1;
+        return res.status(200).json(draftResponse(draft));
+      }
+
+      const draft = {
+        formId: fallbackForm._id,
+        values,
+        resumeToken: randomUUID(),
+        createdAt: new Date(),
+        expiresAt,
+        revision: 1,
+      };
+      localDrafts.set(`${id}:${draft.resumeToken}`, draft);
+      return res.status(201).json(draftResponse(draft));
+    }
+
     const form = await Form.findById(id).lean();
 
     if (!form) {
@@ -97,6 +137,23 @@ async function getDraft(req, res) {
   }
 
   try {
+    const useLocalDraftStore = shouldUseFallbackForm() && process.env.NODE_ENV !== "test";
+
+    if (useLocalDraftStore) {
+      const draft = localDrafts.get(`${id}:${resumeToken}`);
+
+      if (!draft) {
+        return res.status(404).json({ error: "Draft not found" });
+      }
+
+      if (new Date(draft.expiresAt).getTime() <= Date.now()) {
+        localDrafts.delete(`${id}:${resumeToken}`);
+        return res.status(410).json({ error: "This draft has expired" });
+      }
+
+      return res.status(200).json(draft);
+    }
+
     const draft = await Draft.findOne({ formId: id, resumeToken }).lean();
 
     if (!draft) {

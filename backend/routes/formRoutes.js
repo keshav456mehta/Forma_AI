@@ -1,10 +1,16 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const { getFormById, submitForm } = require("../controllers/formController");
+const {
+  getFormById,
+  submitForm,
+  fallbackForm,
+  shouldUseFallbackForm,
+} = require("../controllers/formController");
 const { saveDraft, getDraft } = require("../controllers/draftController");
 const Form = require("../models/Form");
 const {
   extractFromStory,
+  extractLocallyFromStory,
   ExtractionServiceError,
 } = require("../services/extractionService");
 
@@ -37,13 +43,18 @@ router.post("/:id/extract", async (req, res) => {
   }
 
   try {
-    const form = await Form.findById(id).lean();
+    const useLocalFallback = shouldUseFallbackForm() && process.env.NODE_ENV !== "test";
+    const form = useLocalFallback
+      ? fallbackForm
+      : await Form.findById(id).lean();
 
     if (!form) {
       return res.status(404).json({ error: "Form not found" });
     }
 
-    const extracted = await extractFromStory(story, form.fields);
+    const extracted = !process.env.OPENAI_API_KEY && useLocalFallback
+      ? extractLocallyFromStory(story, form.fields)
+      : await extractFromStory(story, form.fields);
     return res.status(200).json(extracted);
   } catch (error) {
     // Do not expose provider details, raw prompts, or model output to clients.
