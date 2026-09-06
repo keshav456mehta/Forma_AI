@@ -57,8 +57,5 @@ const Draft =
   mongoose.models.Draft ||
   mongoose.model("Draft", draftSchema);
 
-
-module.exports = Draft;
-=======
 module.exports = Draft;
 

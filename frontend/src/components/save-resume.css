@@ -1,34 +1,84 @@
 .save-draft-btn {
-  background: transparent;
-  border: 1px solid #ccc;
-  color: #555;
-  padding: 8px 16px;
-  border-radius: 6px;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  border: 1px solid #c7d2fe;
+  color: #312e81;
+  padding: 10px 18px;
+  border-radius: 12px;
   font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.08);
 }
-.save-draft-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.save-msg.success { color: #2e7d32; margin-left: 8px; font-size: 13px; }
-.save-msg.error { color: #c62828; margin-left: 8px; font-size: 13px; }
+
+.save-draft-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #a5b4fc;
+  box-shadow: 0 8px 18px rgba(99, 102, 241, 0.12);
+}
+
+.save-draft-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.save-msg.success {
+  color: #166534;
+  margin-left: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.save-msg.error {
+  color: #b91c1c;
+  margin-left: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
 
 .resume-link-box {
-  background: #f5f5f5;
-  border-radius: 6px;
-  padding: 10px 14px;
   display: flex;
   align-items: center;
   gap: 10px;
+  background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+  border: 1px solid #c7d2fe;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-top: 12px;
+  flex-wrap: wrap;
 }
-<<<<<<< HEAD
-.resume-code { font-weight: 600; }
-=======
-.resume-code { font-weight: 600; }
 
+.resume-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4338ca;
+}
 
+.resume-code {
+  font-weight: 700;
+  color: #1e293b;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
 
-/* Day 25: entrance animation for conditional (showIf) fields becoming
-   visible. Exit is intentionally NOT animated — fields still unmount
-   instantly via `return null` so react-hook-form correctly drops
-   validation on hidden fields (unchanged from Day 19 behavior). */
+.resume-copy-btn {
+  border: none;
+  background: #312e81;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.resume-copy-btn:hover {
+  background: #1f1d5a;
+}
+
 @keyframes field-reveal {
   from {
     opacity: 0;
@@ -44,17 +94,11 @@
   animation: field-reveal 220ms ease-out;
 }
 
-/* Applied during draft resume so many fields appearing at once (Day 24
-   resume setValue() loop) don't stagger/animate individually and cause
-   a jarring layout jump. */
 .field-reveal.no-animate {
   animation: none;
 }
 
-/* Day 25: subtle transition for save/resume status text instead of an
-   abrupt swap. */
 .save-msg,
 .resume-status {
   transition: opacity 150ms ease-in;
 }
->>>>>>> origin/main

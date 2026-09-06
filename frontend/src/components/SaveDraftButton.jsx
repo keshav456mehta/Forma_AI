@@ -1,7 +1,7 @@
 export default function SaveDraftButton({ status = "idle", onSave }) {
   // status can be: "idle" | "saving" | "success" | "error"
   return (
-    <div className="save-draft-wrapper">
+    <div className="save-draft-wrapper flex items-center gap-2">
       <button
         type="button"
         onClick={onSave}

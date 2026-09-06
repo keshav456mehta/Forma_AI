@@ -2,6 +2,43 @@ const mongoose = require("mongoose");
 const Form = require("../models/Form");
 const validateRequiredFields = require("../validateSubmission");
 
+const fallbackForm = {
+  _id: "6a828552980c388e1d07ee4c",
+  title: "Basic Information",
+  description: "Collect basic user information for onboarding.",
+  fields: [
+    {
+      name: "fullName",
+      label: "Full Name",
+      type: "text",
+      required: true,
+      order: 1,
+    },
+    {
+      name: "email",
+      label: "Email Address",
+      type: "text",
+      required: true,
+      order: 2,
+    },
+    {
+      name: "department",
+      label: "Department",
+      type: "dropdown",
+      required: false,
+      order: 3,
+      options: [
+        { label: "Engineering", value: "Engineering" },
+        { label: "Marketing", value: "Marketing" },
+        { label: "Operations", value: "Operations" },
+      ],
+    },
+  ],
+};
+
+function shouldUseFallbackForm() {
+  return !process.env.MONGODB_URI && !process.env.MONGO_URI;
+}
 
 // Get form by ID
 async function getFormById(req, res) {
@@ -14,6 +51,10 @@ async function getFormById(req, res) {
   }
 
   try {
+    if (shouldUseFallbackForm()) {
+      return res.status(200).json(fallbackForm);
+    }
+
     const form = await Form.findById(id).lean();
 
     if (!form) {
@@ -24,6 +65,10 @@ async function getFormById(req, res) {
 
     return res.status(200).json(form);
   } catch (error) {
+    if (shouldUseFallbackForm()) {
+      return res.status(200).json(fallbackForm);
+    }
+
     return res.status(500).json({
       error: "Failed to fetch form",
     });
@@ -42,7 +87,9 @@ async function submitForm(req, res) {
   }
 
   try {
-    const form = await Form.findById(id).lean();
+    const form = shouldUseFallbackForm()
+      ? fallbackForm
+      : await Form.findById(id).lean();
 
     if (!form) {
       return res.status(404).json({
@@ -76,4 +123,6 @@ async function submitForm(req, res) {
 module.exports = {
   getFormById,
   submitForm,
+  fallbackForm,
+  shouldUseFallbackForm,
 };

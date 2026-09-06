@@ -196,15 +196,12 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
   // watchedValues (and therefore showIf conditionals) update correctly,
   // exactly like AI extraction does. Every resumed field is also marked
   // human-edited so a stale extraction can never silently overwrite it.
-<<<<<<< HEAD
-=======
   //
   // Day 25: suppressFieldAnimationRef is flipped on for the duration of the
   // resume so the (potentially many) fields that become visible via this
   // setValue() loop appear instantly together, instead of each one playing
   // the field-reveal entrance animation individually (which looked like a
   // staggered, jarring layout jump).
->>>>>>> origin/main
   const handleResumeDraft = async () => {
     const trimmedCode = resumeCodeInput.trim();
 
@@ -215,10 +212,7 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
 
     setResumingDraft(true);
     setResumeStatus("Loading draft...");
-<<<<<<< HEAD
-=======
     suppressFieldAnimationRef.current = true; // Day 25: no animation for bulk resume
->>>>>>> origin/main
 
     try {
       const response = await axios.get(
@@ -255,15 +249,12 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
       setResumeStatus(message);
     } finally {
       setResumingDraft(false);
-<<<<<<< HEAD
-=======
       // Day 25: re-enable field animation shortly after resume settles, so
       // any field the user changes manually afterward (e.g. toggling a
       // dropdown that reveals a new conditional field) animates normally.
       setTimeout(() => {
         suppressFieldAnimationRef.current = false;
       }, 300);
->>>>>>> origin/main
     }
   };
 
@@ -330,12 +321,17 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
   return (
     <form
       onSubmit={handleSubmit(onValidSubmit, onInvalidSubmit)}
-      className="w-full max-w-md mx-auto px-4 sm:px-6 py-6"
+      className="mx-auto w-full max-w-2xl rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-[0_24px_60px_rgba(37,99,235,0.12)] backdrop-blur-sm sm:p-8"
     >
-      <h2 className="text-2xl font-bold mb-2">{schema.title}</h2>
+      <div className="mb-6 border-b border-slate-200 pb-5">
+        <div className="mb-2 inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-indigo-700">
+          Intake form
+        </div>
+        <h2 className="text-3xl font-black tracking-tight text-slate-900">{schema.title}</h2>
+      </div>
 
       {schema.description && (
-        <p className="text-gray-600 mb-6">{schema.description}</p>
+        <p className="mb-6 text-base text-slate-600">{schema.description}</p>
       )}
 
       {/* Day 9: Magic Input — sends story text to extraction API,
@@ -369,11 +365,7 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
           </button>
         </div>
         {resumeStatus && (
-<<<<<<< HEAD
-          <p role="status" className="mt-2 text-sm text-gray-600">
-=======
           <p role="status" className="mt-2 text-sm text-gray-600 resume-status">
->>>>>>> origin/main
             {resumeStatus}
           </p>
         )}
@@ -495,19 +487,19 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
         );
       })}
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50"
-      >
-        {isSubmitting ? "Submitting..." : "Submit"}
-      </button>
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:translate-y-[-1px] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isSubmitting ? "Submitting..." : "Submit"}
+        </button>
 
-      {/* Day 23 (fixed): save-draft action, now via the teammate-built
-          SaveDraftButton component instead of an inline button. */}
-      <span className="ml-2 inline-block align-middle">
+        {/* Day 23 (fixed): save-draft action, now via the teammate-built
+            SaveDraftButton component instead of an inline button. */}
         <SaveDraftButton status={draftSaveStatus} onSave={handleSaveDraft} />
-      </span>
+      </div>
 
       {/* Day 24: show the resume code once a save succeeds, so the user has
           something to copy for later. */}
