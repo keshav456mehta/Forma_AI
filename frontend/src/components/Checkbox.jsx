@@ -1,0 +1,37 @@
+export default function Checkbox({
+  id,
+  label,
+  required = false,
+  error,
+  ...props
+}) {
+  return (
+    <div className="mb-4">
+      <label
+        htmlFor={id}
+        className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-slate-200"
+      >
+        <input
+          id={id}
+          type="checkbox"
+          className={`h-4 w-4 rounded border accent-orange-500 focus:ring-2 focus:ring-orange-400 dark:border-white/20 dark:bg-white/5 ${
+            error ? "border-red-500 dark:border-red-400/60" : "border-gray-300"
+          }`}
+          {...props}
+        />
+
+        {label}
+
+        {required && (
+          <span className="text-red-500 ml-1">*</span>
+        )}
+      </label>
+
+      {error && (
+        <p className="text-red-500 dark:text-red-400 text-xs mt-1 ml-6">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}

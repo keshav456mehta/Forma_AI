@@ -41,6 +41,24 @@ function shouldUseFallbackForm() {
 }
 
 // Validate the identifier before querying so malformed input has a stable API error.
+// Validate the identifier before querying so malformed input has a stable API error.
+async function getAllForms(req, res) {
+  try {
+    if (shouldUseFallbackForm()) {
+      return res.status(200).json([
+        { _id: fallbackForm._id, title: fallbackForm.title, description: fallbackForm.description },
+      ]);
+    }
+
+    const forms = await Form.find({}, "title description").lean();
+    return res.status(200).json(forms);
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to fetch forms",
+    });
+  }
+}
+
 async function getFormById(req, res) {
   const { id } = req.params;
 
@@ -56,6 +74,11 @@ async function getFormById(req, res) {
     }
 
     const form = await Form.findById(id).lean();
+
+    // The frontend uses this stable demo ID so the app can run before seeding.
+    if (!form && id === fallbackForm._id) {
+      return res.status(200).json(fallbackForm);
+    }
 
     if (!form) {
       return res.status(404).json({
@@ -121,6 +144,7 @@ async function submitForm(req, res) {
 
 
 module.exports = {
+  getAllForms,
   getFormById,
   submitForm,
   fallbackForm,

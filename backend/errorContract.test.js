@@ -33,6 +33,8 @@ describe("API error contract", () => {
   });
 
   test("provider failure classifications do not leak into the HTTP response", async () => {
+    const originalApiKey = process.env.OPENAI_API_KEY;
+    process.env.OPENAI_API_KEY = "test-key";
     jest.resetModules();
     jest.doMock("./models/Form", () => ({ findById: jest.fn() }));
     jest.doMock("./services/extractionService", () => ({
@@ -45,11 +47,19 @@ describe("API error contract", () => {
 
     const Form = require("./models/Form");
     Form.findById.mockReturnValue({ lean: jest.fn().mockResolvedValue({ fields: [] }) });
-    await handler({ params: { id: "507f1f77bcf86cd799439011" }, body: { story: "My car was hit." } }, response);
+    try {
+      await handler({ params: { id: "507f1f77bcf86cd799439011" }, body: { story: "My car was hit." } }, response);
 
-    expect(response.status).toHaveBeenCalledWith(429);
-    expect(response.json).toHaveBeenCalledWith({
-      error: "Extraction service unavailable, please try again",
-    });
+      expect(response.status).toHaveBeenCalledWith(429);
+      expect(response.json).toHaveBeenCalledWith({
+        error: "Extraction service unavailable, please try again",
+      });
+    } finally {
+      if (originalApiKey === undefined) {
+        delete process.env.OPENAI_API_KEY;
+      } else {
+        process.env.OPENAI_API_KEY = originalApiKey;
+      }
+    }
   });
 });

@@ -42,7 +42,8 @@ async function saveDraft(req, res) {
   }
 
   try {
-    const useLocalDraftStore = shouldUseFallbackForm() && process.env.NODE_ENV !== "test";
+    const useLocalDraftStore = process.env.NODE_ENV !== "test" &&
+      (shouldUseFallbackForm() || id === fallbackForm._id);
 
     if (useLocalDraftStore) {
       const expiresAt = new Date();
@@ -137,7 +138,8 @@ async function getDraft(req, res) {
   }
 
   try {
-    const useLocalDraftStore = shouldUseFallbackForm() && process.env.NODE_ENV !== "test";
+    const useLocalDraftStore = process.env.NODE_ENV !== "test" &&
+      (shouldUseFallbackForm() || id === fallbackForm._id);
 
     if (useLocalDraftStore) {
       const draft = localDrafts.get(`${id}:${resumeToken}`);

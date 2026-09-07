@@ -1,2 +1,38 @@
 @import "tailwindcss";
 @import "./theme.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+@keyframes fx-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(18px, -26px) scale(1.06); }
+}
+
+@keyframes fx-float-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-22px, 20px) scale(1.08); }
+}
+
+@keyframes fx-drift {
+  0% { transform: translateY(0) translateX(0); opacity: 0.35; }
+  50% { opacity: 0.85; }
+  100% { transform: translateY(-90vh) translateX(24px); opacity: 0; }
+}
+
+.fx-orb {
+  animation: fx-float 9s ease-in-out infinite;
+}
+.fx-orb-slow {
+  animation: fx-float-slow 13s ease-in-out infinite;
+}
+.fx-particle {
+  animation: fx-drift linear infinite;
+}

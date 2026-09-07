@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const {
+  getAllForms,
   getFormById,
   submitForm,
   fallbackForm,
@@ -17,6 +18,7 @@ const {
 const router = express.Router();
 
 // Keep the public form API grouped under /api/forms in server.js.
+router.get("/", getAllForms);
 router.get("/:id", getFormById);
 router.post("/:id/submit", submitForm);
 
@@ -43,16 +45,15 @@ router.post("/:id/extract", async (req, res) => {
   }
 
   try {
-    const useLocalFallback = shouldUseFallbackForm() && process.env.NODE_ENV !== "test";
-    const form = useLocalFallback
-      ? fallbackForm
-      : await Form.findById(id).lean();
+    const useLocalFallback = process.env.NODE_ENV !== "test" && shouldUseFallbackForm();
+    const storedForm = useLocalFallback ? null : await Form.findById(id).lean();
+    const form = storedForm || (id === fallbackForm._id ? fallbackForm : null);
 
     if (!form) {
       return res.status(404).json({ error: "Form not found" });
     }
 
-    const extracted = !process.env.OPENAI_API_KEY && useLocalFallback
+    const extracted = !process.env.OPENAI_API_KEY
       ? extractLocallyFromStory(story, form.fields)
       : await extractFromStory(story, form.fields);
     return res.status(200).json(extracted);
