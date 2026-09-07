@@ -27,6 +27,24 @@
   box-shadow: inset 0 0 0 1px rgba(202, 138, 4, 0.08);
 }
 
+.dark .field-wrapper.ai-missed {
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(251, 146, 60, 0.06);
+}
+
+.dark .field-wrapper.needs-review {
+  border-color: rgba(250, 204, 21, 0.35);
+  background: rgba(250, 204, 21, 0.06);
+}
+
+.dark .missed-message {
+  color: #fdba74;
+}
+
+.dark .review-message {
+  color: #fde047;
+}
+
 .field-message {
   display: flex;
   align-items: center;

@@ -49,16 +49,16 @@ export default function MagicInput({ formId, onExtracted }) {
   };
 
   return (
-    <div className="mb-6 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-violet-50 p-4 shadow-sm">
+    <div className="mb-6 rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 via-white to-amber-50 p-4 shadow-sm dark:border-orange-500/15 dark:bg-none dark:bg-white/[0.03]">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <label htmlFor="magic-input" className="block text-sm font-semibold text-indigo-800">
-          Magic Input
+        <label htmlFor="magic-input" className="flex items-center gap-1.5 text-sm font-semibold text-orange-700 dark:text-orange-300">
+          <span aria-hidden="true">✨</span> Magic Input
         </label>
         {mockMode && (
           <span
             role="note"
             aria-label="mock mode"
-            className="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-800"
+            className="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300"
           >
             Mock
           </span>
@@ -71,15 +71,16 @@ export default function MagicInput({ formId, onExtracted }) {
         disabled={extracting}
         rows={3}
         placeholder="Describe your incident and we’ll fill the form for you."
-        className="w-full resize-none rounded-xl border border-indigo-200 bg-white px-3 py-3 text-sm text-slate-700 shadow-inner shadow-indigo-100/50 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+        className="w-full resize-none rounded-xl border border-orange-200 bg-white px-3 py-3 text-sm text-slate-700 shadow-inner shadow-orange-100/50 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:shadow-none dark:placeholder:text-slate-500 dark:focus:border-orange-400/60 dark:focus:ring-orange-500/10"
       />
-      {extractError && <p role="alert" className="mt-2 text-xs text-red-600">{extractError}</p>}
+      {extractError && <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">{extractError}</p>}
       <button
         type="button"
         onClick={handleExtract}
         disabled={extracting || !story.trim()}
-        className="mt-3 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:translate-y-[-1px] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition hover:translate-y-[-1px] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
       >
+        <span aria-hidden="true">✨</span>
         {extracting ? "Extracting…" : "Auto-fill from story"}
       </button>
     </div>

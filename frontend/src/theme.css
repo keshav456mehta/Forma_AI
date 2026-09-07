@@ -2,6 +2,7 @@
   --color-primary: #4f46e5;
   --color-secondary: #f3f4f6;
   --color-text: #1f2937;
+  --color-accent: #f97316;
 
   --spacing-sm: 0.5rem;
   --spacing-md: 1rem;
@@ -10,4 +11,8 @@
   --font-sm: 0.875rem;
   --font-base: 1rem;
   --font-lg: 1.25rem;
+}
+
+.dark ::selection {
+  background: rgba(249, 115, 22, 0.35);
 }

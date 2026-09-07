@@ -307,31 +307,38 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
   };
 
   if (loading) {
-    return <p>Loading form...</p>;
+    return <p className="text-slate-600 dark:text-slate-400">Loading form...</p>;
   }
 
   if (error && !schema) {
-    return <p style={{ color: "red" }}>{error}</p>;
+    return <p className="text-red-500 dark:text-red-400">{error}</p>;
   }
 
   if (!schema || !schema.fields) {
-    return <p>No form fields available.</p>;
+    return <p className="text-slate-600 dark:text-slate-400">No form fields available.</p>;
   }
 
   return (
     <form
       onSubmit={handleSubmit(onValidSubmit, onInvalidSubmit)}
-      className="mx-auto w-full max-w-2xl rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-[0_24px_60px_rgba(37,99,235,0.12)] backdrop-blur-sm sm:p-8"
+      className="mx-auto w-full max-w-2xl rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-[0_24px_60px_rgba(37,99,235,0.12)] backdrop-blur-sm dark:border-white/10 dark:bg-[#0f1324]/90 dark:shadow-[0_24px_60px_rgba(0,0,0,0.45)] sm:p-8"
     >
-      <div className="mb-6 border-b border-slate-200 pb-5">
-        <div className="mb-2 inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-indigo-700">
-          Intake form
+      <div className="mb-6 flex items-start justify-between gap-3 border-b border-slate-200 pb-5 dark:border-white/10">
+        <div>
+          <div className="mb-2 inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-indigo-700 dark:border-indigo-400/20 dark:bg-indigo-500/10 dark:text-indigo-300">
+            Intake form
+          </div>
+          <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">{schema.title}</h2>
         </div>
-        <h2 className="text-3xl font-black tracking-tight text-slate-900">{schema.title}</h2>
+        {draftSaveStatus === "success" && (
+          <span className="mt-1 inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+            ✓ Draft saved
+          </span>
+        )}
       </div>
 
       {schema.description && (
-        <p className="mb-6 text-base text-slate-600">{schema.description}</p>
+        <p className="mb-6 text-base text-slate-600 dark:text-slate-400">{schema.description}</p>
       )}
 
       {/* Day 9: Magic Input — sends story text to extraction API,
@@ -342,8 +349,8 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
           ResumeLinkDisplay (below) only ever shows a code back to the user
           after a save — it has no input, so entering a code to resume still
           needs its own control here. */}
-      <div className="mb-6 p-4 border border-gray-200 rounded-md">
-        <label htmlFor="resumeCodeInput" className="block text-sm font-medium mb-1">
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+        <label htmlFor="resumeCodeInput" className="mb-1 block text-sm font-semibold text-slate-700 dark:text-slate-200">
           Resume a saved draft
         </label>
         <div className="flex gap-2">
@@ -353,19 +360,19 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
             value={resumeCodeInput}
             onChange={(e) => setResumeCodeInput(e.target.value)}
             placeholder="Paste resume code"
-            className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
+            className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-indigo-500/20"
           />
           <button
             type="button"
             onClick={handleResumeDraft}
             disabled={resumingDraft}
-            className="px-3 py-2 bg-gray-700 text-white rounded-md text-sm disabled:opacity-50"
+            className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
           >
             {resumingDraft ? "Loading..." : "Resume"}
           </button>
         </div>
         {resumeStatus && (
-          <p role="status" className="mt-2 text-sm text-gray-600 resume-status">
+          <p role="status" className="mt-2 text-sm text-slate-600 dark:text-slate-400 resume-status">
             {resumeStatus}
           </p>
         )}
@@ -471,8 +478,11 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:translate-y-[-1px] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition hover:translate-y-[-1px] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
         >
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
+            <path d="M4 12 20 4l-6 16-3-7-7-1Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
+          </svg>
           {isSubmitting ? "Submitting..." : "Submit"}
         </button>
 
@@ -492,19 +502,19 @@ function FormRenderer({ formId = "6a828552980c388e1d07ee4c" }) {
       {/* Day 17: explicit warning when submission is blocked because required
           fields the AI missed are still empty. */}
       {aiWarning && (
-        <p role="alert" className="mt-3 text-sm font-medium text-orange-700">
+        <p role="alert" className="mt-3 text-sm font-medium text-orange-700 dark:text-orange-400">
           {aiWarning}
         </p>
       )}
 
       {submissionStatus && (
-        <p role="status" className="mt-4 text-green-600 save-msg">
+        <p role="status" className="mt-4 text-green-600 dark:text-emerald-400 save-msg">
           {submissionStatus}
         </p>
       )}
 
       {error && (
-        <p role="alert" className="mt-4 text-red-500">
+        <p role="alert" className="mt-4 text-red-500 dark:text-red-400">
           {error}
         </p>
       )}
