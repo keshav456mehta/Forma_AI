@@ -49,6 +49,8 @@ function cleanExtraction(value, fields) {
     : {};
   const result = emptyExtraction(fields);
 
+  // Parse only known schema fields and normalize their types. This is the
+  // safety boundary between model output and the client-facing form payload.
   for (const field of schemaFields(fields)) {
     const candidate = source[field.name];
     const valueForField = candidate?.value;
@@ -129,6 +131,8 @@ async function requestWithTransientRetry(client, story, fields) {
         throw error;
       }
 
+      // Retry only transient transport/provider failures with a small
+      // exponential backoff; malformed output uses the strict fallback below.
       const delay = RETRY_BASE_DELAY_MS * (2 ** attempt);
       await sleep(delay);
     }

@@ -90,25 +90,16 @@ async function seed() {
   }
 
   await mongoose.connect(MONGODB_URI);
-  console.log("MongoDB connected for seeding");
 
   await Form.deleteMany({});
-  console.log("Old forms removed");
 
-  const createdForms = await Form.insertMany(forms);
-  console.log(`${createdForms.length} forms inserted successfully`);
-
-  createdForms.forEach((form) => {
-    console.log(`- ${form.title} (${form._id})`);
-  });
+  await Form.insertMany(forms);
 }
 
 seed()
-  .catch((error) => {
-    console.error("Seeding failed:", error.message);
+  .catch(() => {
     process.exitCode = 1;
   })
   .finally(async () => {
     await mongoose.disconnect();
-    console.log("Database connection closed");
   });

@@ -59,25 +59,16 @@ async function seed() {
     throw new Error("Missing MONGODB_URI or MONGO_URI in backend/.env");
   }
   await mongoose.connect(MONGODB_URI);
-  console.log("MongoDB connected for seeding");
 
   await Form.deleteMany({ title: "Vehicle Registration - 3-Level Branching" });
-  console.log("Old 3-level form removed");
 
-  const createdForms = await Form.insertMany(forms);
-  console.log(`${createdForms.length} form inserted successfully`);
-
-  createdForms.forEach((form) => {
-    console.log(`- ${form.title} (${form._id})`);
-  });
+  await Form.insertMany(forms);
 }
 
 seed()
-  .catch((error) => {
-    console.error("Seeding failed:", error.message);
+  .catch(() => {
     process.exitCode = 1;
   })
   .finally(async () => {
     await mongoose.disconnect();
-    console.log("Database connection closed");
   });

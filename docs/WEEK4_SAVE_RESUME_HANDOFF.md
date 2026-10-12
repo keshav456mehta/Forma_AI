@@ -10,8 +10,10 @@
 - The extraction service retries transient provider failures, returns a
   controlled error for unavailable providers, and falls back to schema-safe
   empty values for malformed model output.
-- CORS is enabled globally. The server can boot without MongoDB for extraction
-  development, although persisted form routes require a configured database.
+- CORS is restricted to `CORS_ORIGIN` when configured. Local Vite origins are
+  allowed only outside production; production therefore requires an explicit
+  allowlist. The server can boot without MongoDB for extraction development,
+  although persisted form routes require a configured database.
 
 ## Save/resume plan with Rakesh
 

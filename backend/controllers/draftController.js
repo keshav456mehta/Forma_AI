@@ -27,7 +27,9 @@ async function saveDraft(req, res) {
     return res.status(400).json({ error: "Invalid form ID" });
   }
 
-  if (typeof values !== "object" || values === null) {
+  // Drafts accept only an object payload; token and revision are required
+  // together on updates so optimistic-concurrency checks are meaningful.
+  if (typeof values !== "object" || values === null || Array.isArray(values)) {
     return res.status(400).json({ error: "values is required" });
   }
 
@@ -84,6 +86,8 @@ async function saveDraft(req, res) {
       return res.status(404).json({ error: "Form not found" });
     }
 
+    // Every save refreshes the resume window; an update also checks revision
+    // so two clients cannot silently overwrite one another's draft.
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + DRAFT_EXPIRY_DAYS);
 
@@ -156,6 +160,8 @@ async function getDraft(req, res) {
       return res.status(404).json({ error: "Draft not found" });
     }
 
+    // Keep expired records long enough to report expiry rather than a vague
+    // not-found response to a user opening an old resume link.
     if (new Date(draft.expiresAt).getTime() <= Date.now()) {
       return res.status(410).json({ error: "This draft has expired" });
     }

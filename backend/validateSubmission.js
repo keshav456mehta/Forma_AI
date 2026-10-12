@@ -27,6 +27,8 @@ function isFieldVisible(field, submission) {
 function validateRequiredFields(fields, submission) {
   const payload = submission && typeof submission === "object" ? submission : {};
 
+  // Required conditional fields only apply when their controlling answer
+  // makes them visible, preventing hidden branches from blocking submission.
   return fields
     .filter((field) => field.required)
     .filter((field) => isFieldVisible(field, payload))

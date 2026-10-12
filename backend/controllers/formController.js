@@ -40,7 +40,7 @@ function shouldUseFallbackForm() {
   return !process.env.MONGODB_URI && !process.env.MONGO_URI;
 }
 
-// Get form by ID
+// Validate the identifier before querying so malformed input has a stable API error.
 async function getFormById(req, res) {
   const { id } = req.params;
 
@@ -76,7 +76,7 @@ async function getFormById(req, res) {
 }
 
 
-// Submit form data
+// Validate against the stored schema rather than trusting client-side required checks.
 async function submitForm(req, res) {
   const { id } = req.params;
 
